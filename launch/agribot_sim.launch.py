@@ -90,13 +90,11 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}]
     )
     
-    # RViz (optional)
-    rviz_config = os.path.join(pkg_share, 'config', 'rviz_config.rviz')
+    # RViz (optional) - launch without config file
     rviz = Node(
         package='rviz2',
         executable='rviz2',
         name='rviz2',
-        arguments=['-d', rviz_config],
         condition=IfCondition(use_rviz),
         parameters=[{'use_sim_time': use_sim_time}]
     )
