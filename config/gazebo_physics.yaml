@@ -1,0 +1,20 @@
+# Gazebo Physics Configuration
+# Friction and physics parameters for accurate simulation
+
+gazebo_physics:
+  # Physics Engine Settings
+  physics:
+    type: "ode"              # Physics engine: ode or bullet
+    max_step_size: 0.001     # Maximum time step (1ms for 1000Hz)
+    real_time_factor: 1.0    # Real-time factor (1.0 = real-time)
+    real_time_update_rate: 1000.0  # Update rate in Hz
+    
+  # Ground Material Properties
+  ground:
+    mu1: 1.0                 # Longitudinal friction (high for climbing)
+    mu2: 0.5                 # Lateral friction (lower for skid-steer)
+    kp: 1000000.0            # Contact stiffness
+    kd: 10.0                 # Contact damping
+    
+  # Note: Wheel friction (mu1=1.1, mu2=0.5) is set in URDF
+  # These ground values provide complementary friction properties

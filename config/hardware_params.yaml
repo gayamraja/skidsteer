@@ -1,0 +1,27 @@
+# Hardware-Aware Controller Parameters
+# These parameters simulate the actual electronic constraints of the Agribot
+
+hardware_controller:
+  # 34-99 Quantizer Settings
+  quantizer:
+    dead_zone_min: 0.0      # Input below this is ignored
+    dead_zone_max: 0.34      # Robot stays still until stick reaches this value
+    max_output: 0.99         # Maximum output value (Step 99)
+    min_output: 0.34         # Minimum active output (Step 34)
+    
+  # Relay Interlock Settings
+  relay_interlock:
+    direction_switch_delay: 0.15  # 150ms hard pause when direction changes (Forward<->Reverse)
+    enabled: true                 # Enable/disable interlock protection
+    
+  # Soft-Start Ramping (Slew Rate Limiter)
+  soft_start:
+    max_acceleration: 0.5    # Maximum change per update cycle (acceleration)
+    max_deceleration: 0.5    # Maximum change per update cycle (deceleration)
+    update_rate: 50.0       # Controller update rate in Hz
+    enabled: true            # Enable/disable soft-start
+    
+  # Motor Limits
+  motor:
+    max_torque: 300.0        # Maximum torque in Nm (matches gearbox/chain)
+    max_velocity: 10.0       # Maximum angular velocity in rad/s

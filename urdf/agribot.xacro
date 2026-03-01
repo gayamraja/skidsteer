@@ -1,0 +1,119 @@
+<?xml version="1.0"?>
+<robot name="agribot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Constants -->
+  <xacro:property name="pi" value="3.1415926535897931"/>
+
+  <!-- Materials -->
+  <material name="grey"><color rgba="0.5 0.5 0.5 1.0"/></material>
+  <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
+
+  <!-- Base Link: High-clearance chassis at 450mm -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0.45" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.2 0.2 0.05"/> 
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0.45"/>
+      <geometry>
+        <box size="0.2 0.2 0.05"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="40.0"/>
+      <origin xyz="0 0 0.45"/>
+      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="0.5"/>
+    </inertial>
+  </link>
+
+  <!-- V-Leg Macro: Creates leg and wheel assembly -->
+  <xacro:macro name="v_leg" params="prefix x_reflect y_reflect">
+    <!-- Leg Link -->
+    <link name="${prefix}_leg">
+      <visual>
+        <origin xyz="${x_reflect*0.04} ${y_reflect*0.043} 0.32" rpy="0 0.5 0"/>
+        <geometry><box size="0.04 0.04 0.3"/></geometry>
+        <material name="grey"/>
+      </visual>
+      <collision>
+        <origin xyz="${x_reflect*0.04} ${y_reflect*0.043} 0.32" rpy="0 0.5 0"/>
+        <geometry><box size="0.04 0.04 0.3"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="2.0"/>
+        <origin xyz="${x_reflect*0.04} ${y_reflect*0.043} 0.32"/>
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+      </inertial>
+    </link>
+
+    <!-- Fixed joint connecting leg to base -->
+    <joint name="${prefix}_leg_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="${prefix}_leg"/>
+      <origin xyz="0 0 0"/>
+    </joint>
+
+    <!-- Wheel Link: 4.00-8 tire (405mm diameter, 0.2025m radius) -->
+    <link name="${prefix}_wheel">
+      <visual>
+        <geometry><cylinder radius="0.2025" length="0.101"/></geometry>
+        <material name="black"/>
+      </visual>
+      <collision>
+        <geometry><cylinder radius="0.2025" length="0.101"/></geometry>
+      </collision>
+      <inertial>
+        <mass value="5.0"/>
+        <inertia ixx="0.06" ixy="0" ixz="0" iyy="0.06" iyz="0" izz="0.1"/>
+      </inertial>
+    </link>
+
+    <!-- Continuous joint for wheel rotation -->
+    <joint name="${prefix}_wheel_joint" type="continuous">
+      <parent link="${prefix}_leg"/>
+      <child link="${prefix}_wheel"/>
+      <origin xyz="${x_reflect*0.0405} ${y_reflect*0.0435} 0.2025" rpy="${pi/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="300" velocity="10.0"/>
+    </joint>
+    
+    <!-- Gazebo friction parameters for skid-steer -->
+    <gazebo reference="${prefix}_wheel">
+      <mu1>1.1</mu1>
+      <mu2>0.5</mu2>
+      <kp>1000000.0</kp>
+      <kd>10.0</kd>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- Instantiate 4 V-legs: front_left, front_right, rear_left, rear_right -->
+  <xacro:v_leg prefix="front_left"  x_reflect="1"  y_reflect="1" />
+  <xacro:v_leg prefix="front_right" x_reflect="1"  y_reflect="-1" />
+  <xacro:v_leg prefix="rear_left"   x_reflect="-1" y_reflect="1" />
+  <xacro:v_leg prefix="rear_right"  x_reflect="-1" y_reflect="-1" />
+
+  <!-- Gazebo plugin for skid steer control -->
+  <gazebo>
+    <plugin name="skid_steer_drive_controller" filename="libgazebo_ros_skid_steer_drive.so">
+      <update_rate>100</update_rate>
+      <robotNamespace>/</robotNamespace>
+      <leftFrontJoint>front_left_wheel_joint</leftFrontJoint>
+      <rightFrontJoint>front_right_wheel_joint</rightFrontJoint>
+      <leftRearJoint>rear_left_wheel_joint</leftRearJoint>
+      <rightRearJoint>rear_right_wheel_joint</rightRearJoint>
+      <wheelSeparation>0.087</wheelSeparation>
+      <wheelDiameter>0.405</wheelDiameter>
+      <torque>300</torque>
+      <commandTopic>cmd_vel</commandTopic>
+      <odometryTopic>odom</odometryTopic>
+      <odometryFrame>odom</odometryFrame>
+      <robotBaseFrame>base_link</robotBaseFrame>
+      <publishOdomTF>true</publishOdomTF>
+    </plugin>
+  </gazebo>
+
+</robot>

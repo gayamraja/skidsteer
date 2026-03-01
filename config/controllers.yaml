@@ -1,0 +1,35 @@
+# Gazebo ROS Control Configuration
+# Controller settings for skid steer drive
+
+controller_manager:
+  ros__parameters:
+    update_rate: 100  # Hz
+
+    # Joint State Controller
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    # Left Side Wheel Controllers (Front and Rear)
+    front_left_wheel_controller:
+      type: effort_controllers/JointEffortController
+      joint: front_left_wheel_joint
+      
+    rear_left_wheel_controller:
+      type: effort_controllers/JointEffortController
+      joint: rear_left_wheel_joint
+
+    # Right Side Wheel Controllers (Front and Rear)
+    front_right_wheel_controller:
+      type: effort_controllers/JointEffortController
+      joint: front_right_wheel_joint
+      
+    rear_right_wheel_controller:
+      type: effort_controllers/JointEffortController
+      joint: rear_right_wheel_joint
+
+# Controller groups for easy management
+skid_steer_controllers:
+  - front_left_wheel_controller
+  - rear_left_wheel_controller
+  - front_right_wheel_controller
+  - rear_right_wheel_controller
