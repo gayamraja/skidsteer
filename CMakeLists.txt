@@ -19,7 +19,6 @@ find_package(xacro REQUIRED)
 find_package(gazebo_ros REQUIRED)
 find_package(gazebo_plugins REQUIRED)
 find_package(robot_state_publisher REQUIRED)
-find_package(joint_state_publisher REQUIRED)
 find_package(launch REQUIRED)
 find_package(launch_ros REQUIRED)
 

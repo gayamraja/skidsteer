@@ -21,7 +21,6 @@
   <depend>gazebo_ros</depend>
   <depend>gazebo_plugins</depend>
   <depend>robot_state_publisher</depend>
-  <depend>joint_state_publisher</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
 
