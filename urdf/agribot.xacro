@@ -6,47 +6,47 @@
   <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
 
   <!-- Base Link: High-clearance chassis at 450mm -->
-  <!-- Enlarged to 0.8m x 0.5m to match substantial steel frame in photo -->
+  <!-- Industrial scale: 0.9m x 0.6m heavy steel frame that fills space between wheels -->
   <link name="base_link">
     <visual>
       <origin xyz="0 0 0.45" rpy="0 0 0"/>
       <geometry>
-        <box size="0.8 0.5 0.1"/> 
+        <box size="0.9 0.6 0.08"/> 
       </geometry>
       <material name="grey"/>
     </visual>
     <collision>
       <origin xyz="0 0 0.45" rpy="0 0 0"/>
       <geometry>
-        <box size="0.8 0.5 0.1"/>
+        <box size="0.9 0.6 0.08"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="50.0"/>
+      <mass value="60.0"/>
       <origin xyz="0 0 0.45" rpy="0 0 0"/>
-      <inertia ixx="1.2" ixy="0" ixz="0" iyy="1.2" iyz="0" izz="1.2"/>
+      <inertia ixx="1.5" ixy="0" ixz="0" iyy="2.0" iyz="0" izz="2.0"/>
     </inertial>
   </link>
 
   <!-- V-Leg Macro: Creates leg and wheel assembly -->
+  <!-- Industrial scale: Heavy frame with V-legs that extend to wheels -->
   <!-- Corrected dimensions: 81cm (0.81m) wheelbase, 87cm (0.87m) track -->
-  <!-- Legs positioned at corners of chassis with proper flare for wide track -->
   <xacro:macro name="v_leg" params="prefix x_reflect y_reflect">
-    <!-- Leg Link: Thick square tubing (60mm) angled to reach wheels -->
+    <!-- Leg Link: Thick square tubing (60mm) with sharper V-angle -->
     <link name="${prefix}_leg">
       <visual>
-        <origin xyz="0 0 0.1" rpy="0 ${x_reflect * 0.4} 0"/>
-        <geometry><box size="0.06 0.06 0.4"/></geometry>
+        <origin xyz="0 0 -0.12" rpy="0 ${x_reflect * 0.5} 0"/>
+        <geometry><box size="0.06 0.06 0.35"/></geometry>
         <material name="grey"/>
       </visual>
       <collision>
-        <origin xyz="0 0 0.1" rpy="0 ${x_reflect * 0.4} 0"/>
-        <geometry><box size="0.06 0.06 0.4"/></geometry>
+        <origin xyz="0 0 -0.12" rpy="0 ${x_reflect * 0.5} 0"/>
+        <geometry><box size="0.06 0.06 0.35"/></geometry>
       </collision>
       <inertial>
-        <mass value="2.5"/>
-        <origin xyz="0 0 0.1"/>
-        <inertia ixx="0.015" ixy="0" ixz="0" iyy="0.015" iyz="0" izz="0.015"/>
+        <mass value="3.0"/>
+        <origin xyz="0 0 -0.12"/>
+        <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02"/>
       </inertial>
     </link>
 
@@ -54,7 +54,7 @@
     <joint name="${prefix}_leg_joint" type="fixed">
       <parent link="base_link"/>
       <child link="${prefix}_leg"/>
-      <origin xyz="${x_reflect*0.4} ${y_reflect*0.25} 0.45" rpy="0 0 0"/>
+      <origin xyz="${x_reflect*0.4} ${y_reflect*0.3} 0.45" rpy="0 0 0"/>
     </joint>
 
     <!-- Wheel Link: 4.00-8 tire (405mm diameter, 0.2025m radius) -->
@@ -67,17 +67,17 @@
         <geometry><cylinder radius="0.2025" length="0.12"/></geometry>
       </collision>
       <inertial>
-        <mass value="6.0"/>
-        <inertia ixx="0.07" ixy="0" ixz="0" iyy="0.07" iyz="0" izz="0.12"/>
+        <mass value="8.0"/>
+        <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.15"/>
       </inertial>
     </link>
 
     <!-- Continuous joint for wheel rotation -->
-    <!-- Wheel positions create 0.87m track width (0.25 chassis + 0.185 flare = 0.435m per side) -->
+    <!-- Wheel offset: 0.3m leg attachment + 0.135m wheel offset = 0.435m (half of 0.87m track) -->
     <joint name="${prefix}_wheel_joint" type="continuous">
       <parent link="${prefix}_leg"/>
       <child link="${prefix}_wheel"/>
-      <origin xyz="${x_reflect*0.05} ${y_reflect*0.185} -0.2475" rpy="${-pi/2} 0 0"/>
+      <origin xyz="${x_reflect*0.08} ${y_reflect*0.135} -0.2475" rpy="${-pi/2} 0 0"/>
       <axis xyz="0 0 1"/>
       <limit effort="300" velocity="10.0"/>
     </joint>
