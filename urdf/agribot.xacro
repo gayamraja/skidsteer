@@ -1,9 +1,6 @@
 <?xml version="1.0"?>
 <robot name="agribot" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- Constants -->
-  <xacro:property name="pi" value="3.1415926535897931"/>
-
   <!-- Materials -->
   <material name="grey"><color rgba="0.5 0.5 0.5 1.0"/></material>
   <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
