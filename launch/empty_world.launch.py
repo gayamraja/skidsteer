@@ -6,8 +6,9 @@ Minimal setup: only robot and ground plane
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
-from launch.substitutions import LaunchConfiguration
+from launch.substitutions import LaunchConfiguration, Command
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 import os
 
@@ -20,12 +21,11 @@ def generate_launch_description():
     # Launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     
-    # Robot description
-    robot_description_content = f"""
-    <robot name="agribot">
-        <xacro:include filename="{urdf_file}"/>
-    </robot>
-    """
+    # Process xacro file to get robot description
+    robot_description_content = ParameterValue(
+        Command(['xacro ', urdf_file]),
+        value_type=str
+    )
     
     # Robot State Publisher
     robot_state_publisher = Node(

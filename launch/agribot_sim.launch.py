@@ -8,8 +8,9 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 import os
 
@@ -23,12 +24,11 @@ def generate_launch_description():
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     use_rviz = LaunchConfiguration('use_rviz', default='false')
     
-    # Robot description from URDF
-    robot_description_content = f"""
-    <robot name="agribot">
-        <xacro:include filename="{urdf_file}"/>
-    </robot>
-    """
+    # Process xacro file to get robot description
+    robot_description_content = ParameterValue(
+        Command(['xacro ', urdf_file]),
+        value_type=str
+    )
     
     # Robot State Publisher
     robot_state_publisher = Node(

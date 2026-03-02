@@ -74,11 +74,32 @@ class HardwareAwareController(Node):
         
     def load_config(self):
         """Load hardware parameters from YAML file"""
-        config_path = os.path.join(
-            os.path.dirname(__file__),
-            '..', 'config', 'hardware_params.yaml'
-        )
-        config_path = os.path.abspath(config_path)
+        # Try multiple possible paths
+        possible_paths = [
+            # Installed path (share directory)
+            os.path.join(
+                os.path.dirname(__file__),
+                '..', '..', '..', 'share', 'skid_steer_robot', 'config', 'hardware_params.yaml'
+            ),
+            # Source path
+            os.path.join(
+                os.path.dirname(__file__),
+                '..', 'config', 'hardware_params.yaml'
+            ),
+            # Alternative installed path
+            '/opt/ros/humble/share/skid_steer_robot/config/hardware_params.yaml'
+        ]
+        
+        config_path = None
+        for path in possible_paths:
+            abs_path = os.path.abspath(path)
+            if os.path.exists(abs_path):
+                config_path = abs_path
+                break
+        
+        if config_path is None:
+            # Use first path as default (will use defaults if not found)
+            config_path = os.path.abspath(possible_paths[0])
         
         try:
             with open(config_path, 'r') as f:
