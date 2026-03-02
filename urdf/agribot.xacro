@@ -28,21 +28,22 @@
   </link>
 
   <!-- V-Leg Macro: Creates leg and wheel assembly -->
+  <!-- Corrected dimensions: 81cm (0.81m) wheelbase, 87cm (0.87m) track -->
   <xacro:macro name="v_leg" params="prefix x_reflect y_reflect">
     <!-- Leg Link -->
     <link name="${prefix}_leg">
       <visual>
-        <origin xyz="${x_reflect*0.04} ${y_reflect*0.043} 0.32" rpy="0 0.5 0"/>
-        <geometry><box size="0.04 0.04 0.3"/></geometry>
+        <origin xyz="${x_reflect*0.2} ${y_reflect*0.2} 0.32" rpy="0 0.5 0"/>
+        <geometry><box size="0.05 0.05 0.4"/></geometry>
         <material name="grey"/>
       </visual>
       <collision>
-        <origin xyz="${x_reflect*0.04} ${y_reflect*0.043} 0.32" rpy="0 0.5 0"/>
-        <geometry><box size="0.04 0.04 0.3"/></geometry>
+        <origin xyz="${x_reflect*0.2} ${y_reflect*0.2} 0.32" rpy="0 0.5 0"/>
+        <geometry><box size="0.05 0.05 0.4"/></geometry>
       </collision>
       <inertial>
         <mass value="2.0"/>
-        <origin xyz="${x_reflect*0.04} ${y_reflect*0.043} 0.32"/>
+        <origin xyz="${x_reflect*0.2} ${y_reflect*0.2} 0.32"/>
         <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
       </inertial>
     </link>
@@ -70,10 +71,11 @@
     </link>
 
     <!-- Continuous joint for wheel rotation -->
+    <!-- Wheel positions: 0.405m (half of 0.81m wheelbase), 0.435m (half of 0.87m track) -->
     <joint name="${prefix}_wheel_joint" type="continuous">
       <parent link="${prefix}_leg"/>
       <child link="${prefix}_wheel"/>
-      <origin xyz="${x_reflect*0.0405} ${y_reflect*0.0435} 0.2025" rpy="${pi/2} 0 0"/>
+      <origin xyz="${x_reflect*0.405} ${y_reflect*0.435} 0.2025" rpy="${pi/2} 0 0"/>
       <axis xyz="0 0 1"/>
       <limit effort="300" velocity="10.0"/>
     </joint>
@@ -102,7 +104,7 @@
       <robotNamespace>/</robotNamespace>
       <left_joint>front_left_wheel_joint</left_joint>
       <right_joint>front_right_wheel_joint</right_joint>
-      <wheel_separation>0.087</wheel_separation>
+      <wheel_separation>0.87</wheel_separation>
       <wheel_diameter>0.405</wheel_diameter>
       <max_wheel_torque>300</max_wheel_torque>
       <command_topic>cmd_vel</command_topic>

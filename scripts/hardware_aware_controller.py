@@ -208,8 +208,8 @@ class HardwareAwareController(Node):
         angular = msg.angular.z
         
         # Skid steer kinematics: v_left = linear - angular * wheel_separation/2
-        # For simplicity, using wheel separation of 0.087m (87mm)
-        wheel_separation = 0.087
+        # Wheel separation: 0.87m (87cm track width)
+        wheel_separation = 0.87
         left_vel = linear - angular * wheel_separation / 2.0
         right_vel = linear + angular * wheel_separation / 2.0
         

@@ -13,8 +13,8 @@ This simulation implements a 4-phase approach to create a digital twin of the Ag
 
 ## Physical Specifications
 
-- **Wheelbase**: 81mm (front-to-back wheel centers)
-- **Track Width**: 87mm (left-to-right wheel centers)
+- **Wheelbase**: 81cm (0.81m) - front-to-back wheel centers
+- **Track Width**: 87cm (0.87m) - left-to-right wheel centers
 - **Chassis Height**: 450mm from ground (high-clearance design)
 - **Base Mass**: 40kg
 - **Total Mass**: 60kg (40kg base + 20kg wheels)
