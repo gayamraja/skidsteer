@@ -6,76 +6,78 @@
   <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
 
   <!-- Base Link: High-clearance chassis at 450mm -->
+  <!-- Enlarged to 0.8m x 0.5m to match substantial steel frame in photo -->
   <link name="base_link">
     <visual>
       <origin xyz="0 0 0.45" rpy="0 0 0"/>
       <geometry>
-        <box size="0.2 0.2 0.05"/> 
+        <box size="0.8 0.5 0.1"/> 
       </geometry>
       <material name="grey"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0.45"/>
+      <origin xyz="0 0 0.45" rpy="0 0 0"/>
       <geometry>
-        <box size="0.2 0.2 0.05"/>
+        <box size="0.8 0.5 0.1"/>
       </geometry>
     </collision>
     <inertial>
-      <mass value="40.0"/>
-      <origin xyz="0 0 0.45"/>
-      <inertia ixx="0.5" ixy="0" ixz="0" iyy="0.5" iyz="0" izz="0.5"/>
+      <mass value="50.0"/>
+      <origin xyz="0 0 0.45" rpy="0 0 0"/>
+      <inertia ixx="1.2" ixy="0" ixz="0" iyy="1.2" iyz="0" izz="1.2"/>
     </inertial>
   </link>
 
   <!-- V-Leg Macro: Creates leg and wheel assembly -->
   <!-- Corrected dimensions: 81cm (0.81m) wheelbase, 87cm (0.87m) track -->
+  <!-- Legs positioned at corners of chassis with proper flare for wide track -->
   <xacro:macro name="v_leg" params="prefix x_reflect y_reflect">
-    <!-- Leg Link -->
+    <!-- Leg Link: Thick square tubing (60mm) angled to reach wheels -->
     <link name="${prefix}_leg">
       <visual>
-        <origin xyz="${x_reflect*0.2} ${y_reflect*0.2} 0.32" rpy="0 0.5 0"/>
-        <geometry><box size="0.05 0.05 0.4"/></geometry>
+        <origin xyz="0 0 0.1" rpy="0 ${x_reflect * 0.4} 0"/>
+        <geometry><box size="0.06 0.06 0.4"/></geometry>
         <material name="grey"/>
       </visual>
       <collision>
-        <origin xyz="${x_reflect*0.2} ${y_reflect*0.2} 0.32" rpy="0 0.5 0"/>
-        <geometry><box size="0.05 0.05 0.4"/></geometry>
+        <origin xyz="0 0 0.1" rpy="0 ${x_reflect * 0.4} 0"/>
+        <geometry><box size="0.06 0.06 0.4"/></geometry>
       </collision>
       <inertial>
-        <mass value="2.0"/>
-        <origin xyz="${x_reflect*0.2} ${y_reflect*0.2} 0.32"/>
-        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+        <mass value="2.5"/>
+        <origin xyz="0 0 0.1"/>
+        <inertia ixx="0.015" ixy="0" ixz="0" iyy="0.015" iyz="0" izz="0.015"/>
       </inertial>
     </link>
 
-    <!-- Fixed joint connecting leg to base -->
+    <!-- Fixed joint connecting leg to base at chassis corners -->
     <joint name="${prefix}_leg_joint" type="fixed">
       <parent link="base_link"/>
       <child link="${prefix}_leg"/>
-      <origin xyz="0 0 0"/>
+      <origin xyz="${x_reflect*0.4} ${y_reflect*0.25} 0.45" rpy="0 0 0"/>
     </joint>
 
     <!-- Wheel Link: 4.00-8 tire (405mm diameter, 0.2025m radius) -->
     <link name="${prefix}_wheel">
       <visual>
-        <geometry><cylinder radius="0.2025" length="0.101"/></geometry>
+        <geometry><cylinder radius="0.2025" length="0.12"/></geometry>
         <material name="black"/>
       </visual>
       <collision>
-        <geometry><cylinder radius="0.2025" length="0.101"/></geometry>
+        <geometry><cylinder radius="0.2025" length="0.12"/></geometry>
       </collision>
       <inertial>
-        <mass value="5.0"/>
-        <inertia ixx="0.06" ixy="0" ixz="0" iyy="0.06" iyz="0" izz="0.1"/>
+        <mass value="6.0"/>
+        <inertia ixx="0.07" ixy="0" ixz="0" iyy="0.07" iyz="0" izz="0.12"/>
       </inertial>
     </link>
 
     <!-- Continuous joint for wheel rotation -->
-    <!-- Wheel positions: 0.405m (half of 0.81m wheelbase), 0.435m (half of 0.87m track) -->
+    <!-- Wheel positions create 0.87m track width (0.25 chassis + 0.185 flare = 0.435m per side) -->
     <joint name="${prefix}_wheel_joint" type="continuous">
       <parent link="${prefix}_leg"/>
       <child link="${prefix}_wheel"/>
-      <origin xyz="${x_reflect*0.405} ${y_reflect*0.435} 0.2025" rpy="${pi/2} 0 0"/>
+      <origin xyz="${x_reflect*0.05} ${y_reflect*0.185} -0.2475" rpy="${-pi/2} 0 0"/>
       <axis xyz="0 0 1"/>
       <limit effort="300" velocity="10.0"/>
     </joint>
