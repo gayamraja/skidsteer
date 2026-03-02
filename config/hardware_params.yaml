@@ -16,9 +16,10 @@ hardware_controller:
     
   # Soft-Start Ramping (Slew Rate Limiter)
   # Reduced rates for high-clearance (0.6m) design to prevent wheelies
+  # Further reduced to 0.015 for agricultural terrain testing
   soft_start:
-    max_acceleration: 0.3    # Maximum change per update cycle (acceleration) - reduced for stability
-    max_deceleration: 0.3    # Maximum change per update cycle (deceleration) - reduced for stability
+    max_acceleration: 0.015  # Maximum change per update cycle (acceleration) - very conservative for terrain
+    max_deceleration: 0.015  # Maximum change per update cycle (deceleration) - very conservative for terrain
     update_rate: 50.0       # Controller update rate in Hz
     enabled: true            # Enable/disable soft-start
     

@@ -18,7 +18,8 @@ def generate_launch_description():
     # Package directories
     pkg_share = FindPackageShare('skid_steer_robot').find('skid_steer_robot')
     urdf_file = os.path.join(pkg_share, 'urdf', 'agribot.xacro')
-    world_file = os.path.join(pkg_share, 'worlds', 'empty_calibration.world')
+    # Use agricultural field world for terrain testing
+    world_file = os.path.join(pkg_share, 'worlds', 'agriculture_field.world')
     
     # Launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
