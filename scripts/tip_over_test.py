@@ -69,8 +69,10 @@ class TipOverTest(Node):
         self.max_roll = max(self.max_roll, abs(roll))
         self.max_pitch = max(self.max_pitch, abs(pitch))
         
-        # Check for tip-over (angles > 45 degrees)
-        if abs(roll) > math.pi / 4 or abs(pitch) > math.pi / 4:
+        # Check for tip-over (angles > 30 degrees for high-clearance robot)
+        # At 0.6m height, even 30 degrees is dangerous
+        tip_threshold = math.radians(30)  # 30 degrees
+        if abs(roll) > tip_threshold or abs(pitch) > tip_threshold:
             self.get_logger().error('TIP-OVER DETECTED!')
             self.end_test()
     
@@ -95,11 +97,12 @@ class TipOverTest(Node):
         self.get_logger().info(f'Maximum Roll: {roll_deg:.2f} degrees')
         self.get_logger().info(f'Maximum Pitch: {pitch_deg:.2f} degrees')
         
-        # Success criteria: angles < 45 degrees
-        if roll_deg < 45.0 and pitch_deg < 45.0:
-            self.get_logger().info('RESULT: PASS - Robot remained stable')
+        # Success criteria: angles < 30 degrees (stricter for high-clearance 0.6m chassis)
+        # At 0.6m height, 30 degrees is the practical limit before tip-over
+        if roll_deg < 30.0 and pitch_deg < 30.0:
+            self.get_logger().info('RESULT: PASS - Robot remained stable (high-clearance design)')
         else:
-            self.get_logger().error('RESULT: FAIL - Robot tipped over')
+            self.get_logger().error('RESULT: FAIL - Robot exceeded 30 degree tip threshold')
         
         self.get_logger().info('=' * 50)
         
