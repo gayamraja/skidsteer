@@ -47,10 +47,7 @@ install(DIRECTORY worlds/
 # Install Python scripts
 install(PROGRAMS
   scripts/hardware_aware_controller.py
-  scripts/tip_over_test.py
-  scripts/pivot_stress_test.py
-  scripts/latency_test.py
-  scripts/static_tip_test.py
+  scripts/essential_safety_check.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

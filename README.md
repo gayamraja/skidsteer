@@ -84,16 +84,17 @@ ros2 launch skid_steer_robot empty_world.launch.py
 
 Minimal setup for Phase 3 physics calibration.
 
-### Run Stress Tests
+### Run Essential Safety Tests (Automated)
 
 ```bash
-ros2 launch skid_steer_robot stress_tests.launch.py
+ros2 launch skid_steer_robot essential_tests.launch.py
 ```
 
-Runs all three destruction tests:
-1. **Tip-Over Test**: Maximum acceleration stability check
-2. **Pivot Stress Test**: 360° rotation without motor stall
-3. **Latency Test**: Command-to-motion delay measurement
+Runs automated safety tests for 5 km/h max speed operation:
+1. **Pivot Turn Test**: 360° rotation in place - checks for lateral tipping
+2. **Incline Start Test**: Drive up 15° ramp and emergency stop - checks for rear tip-over
+
+These tests verify the 0.6m high-clearance design is stable at low speeds (5 km/h max).
 
 ### Manual Control
 
