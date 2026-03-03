@@ -91,6 +91,21 @@ def generate_launch_description():
         output='screen'
     )
     
+    # Spawn controllers (alternative to manual ros2 control commands)
+    spawn_diff_cont = Node(
+        package='controller_manager',
+        executable='spawner.py',
+        arguments=['diff_cont', '--controller-manager', '/controller_manager'],
+        output='screen'
+    )
+    
+    spawn_joint_broadcaster = Node(
+        package='controller_manager',
+        executable='spawner.py',
+        arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
+        output='screen'
+    )
+    
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
