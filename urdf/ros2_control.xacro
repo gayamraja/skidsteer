@@ -55,10 +55,9 @@
   <!-- This plugin provides the controller_manager service for Gazebo -->
   <!-- It loads the hardware and makes controllers available via ros2 control commands -->
   <!-- The plugin automatically gets robot_description from parameter server -->
-  <!-- Controllers are configured via the controllers.yaml file path -->
+  <!-- Note: Controllers.yaml is loaded via ros2 control commands, not here -->
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
-      <parameters>config/agribot_controllers.yaml</parameters>
     </plugin>
   </gazebo>
 
