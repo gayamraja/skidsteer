@@ -91,21 +91,6 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Spawn controllers (alternative to manual ros2 control commands)
-    spawn_diff_cont = Node(
-        package='controller_manager',
-        executable='spawner.py',
-        arguments=['diff_cont', '--controller-manager', '/controller_manager'],
-        output='screen'
-    )
-    
-    spawn_joint_broadcaster = Node(
-        package='controller_manager',
-        executable='spawner.py',
-        arguments=['joint_state_broadcaster', '--controller-manager', '/controller_manager'],
-        output='screen'
-    )
-    
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
@@ -116,10 +101,10 @@ def generate_launch_description():
         joint_state_publisher,
         gazebo_launch,
         spawn_entity,
-        controller_manager,
-        # Spawn controllers after a delay to ensure controller_manager is ready
-        TimerAction(
-            period=3.0,
-            actions=[spawn_joint_broadcaster, spawn_diff_cont]
-        )
+        controller_manager
+        # Note: Controllers must be spawned manually after launch:
+        # ros2 control load_controller diff_cont
+        # ros2 control load_controller joint_state_broadcaster
+        # ros2 control set_controller_state diff_cont active
+        # ros2 control set_controller_state joint_state_broadcaster active
     ])
