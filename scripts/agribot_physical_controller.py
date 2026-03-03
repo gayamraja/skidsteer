@@ -14,16 +14,16 @@ class AgribotPhysicalController(Node):
     def __init__(self):
         super().__init__('agribot_physical_controller')
         
-        # Subscribe to raw cmd_vel (from teleop)
+        # Subscribe to teleop cmd_vel
         self.cmd_sub = self.create_subscription(
             Twist,
-            '/cmd_vel_raw',  # Subscribe to raw input
+            '/cmd_vel',
             self.cmd_vel_callback,
             10
         )
-        
-        # Publish processed command to /cmd_vel (for diff_drive plugin)
-        self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+
+        # Publish processed command to DiffDriveController
+        self.cmd_pub = self.create_publisher(Twist, '/diff_cont/cmd_vel', 10)
         
         # Physical Constants for 22.5:1 Gear Ratio
         self.MIN_PWM_STEP = 34  # Minimum starting threshold (Step 34)

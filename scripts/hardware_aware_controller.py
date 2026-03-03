@@ -10,7 +10,6 @@ Simulates the actual electronic constraints:
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Float64
 import yaml
 import os
 from enum import Enum
@@ -31,6 +30,9 @@ class HardwareAwareController(Node):
         # Load configuration
         self.load_config()
         
+        # Wheel separation used in both kinematics directions
+        self.wheel_separation = 0.87  # 87cm track width
+
         # Controller state
         self.current_left_cmd = 0.0
         self.current_right_cmd = 0.0
@@ -39,16 +41,11 @@ class HardwareAwareController(Node):
         self.direction_state = Direction.STOPPED
         self.interlock_active = False
         self.interlock_end_time = 0.0
-        
-        # Publishers for wheel commands
-        self.left_cmd_pub = self.create_publisher(
-            Float64,
-            'left_track_cmd',
-            10
-        )
-        self.right_cmd_pub = self.create_publisher(
-            Float64,
-            'right_track_cmd',
+
+        # Publisher: processed Twist goes directly to DiffDriveController
+        self.drive_cmd_pub = self.create_publisher(
+            Twist,
+            '/diff_cont/cmd_vel',
             10
         )
         
@@ -208,10 +205,8 @@ class HardwareAwareController(Node):
         angular = msg.angular.z
         
         # Skid steer kinematics: v_left = linear - angular * wheel_separation/2
-        # Wheel separation: 0.87m (87cm track width)
-        wheel_separation = 0.87
-        left_vel = linear - angular * wheel_separation / 2.0
-        right_vel = linear + angular * wheel_separation / 2.0
+        left_vel = linear - angular * self.wheel_separation / 2.0
+        right_vel = linear + angular * self.wheel_separation / 2.0
         
         # Account for 22.5:1 total reduction (10:1 gearbox + 2.25:1 chain)
         # At 5 km/h (1.38 m/s), motor runs at 1462 RPM
@@ -254,14 +249,13 @@ class HardwareAwareController(Node):
             self.current_right_cmd
         )
         
-        # Publish commands
-        left_msg = Float64()
-        left_msg.data = self.current_left_cmd
-        self.left_cmd_pub.publish(left_msg)
-        
-        right_msg = Float64()
-        right_msg.data = self.current_right_cmd
-        self.right_cmd_pub.publish(right_msg)
+        # Inverse kinematics: convert left/right wheel velocities back to Twist
+        # linear.x = (left + right) / 2
+        # angular.z = (right - left) / wheel_separation
+        out = Twist()
+        out.linear.x = (self.current_left_cmd + self.current_right_cmd) / 2.0
+        out.angular.z = (self.current_right_cmd - self.current_left_cmd) / self.wheel_separation
+        self.drive_cmd_pub.publish(out)
 
 def main(args=None):
     rclpy.init(args=args)

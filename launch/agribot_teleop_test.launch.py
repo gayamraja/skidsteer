@@ -41,15 +41,6 @@ def generate_launch_description():
         ]
     )
     
-    # Joint State Publisher
-    joint_state_publisher = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        name='joint_state_publisher',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
-    )
-    
     # Gazebo launch with empty world
     # Set verbosity to 'error' to suppress model.config warnings
     gazebo_launch = IncludeLaunchDescription(
@@ -81,8 +72,23 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Physical controller (Step 34 logic) - replaces hardware_aware for basic test
-    # This controller processes teleop input and applies Step 34 jump logic
+    # Spawn joint_state_broadcaster (ros2_control publishes /joint_states)
+    joint_state_broadcaster_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['joint_state_broadcaster'],
+        output='screen'
+    )
+
+    # Spawn DiffDriveController
+    diff_drive_spawner = Node(
+        package='controller_manager',
+        executable='spawner',
+        arguments=['diff_cont'],
+        output='screen'
+    )
+
+    # Physical controller (Step 34 logic): /cmd_vel → constraints → /diff_cont/cmd_vel
     physical_controller = Node(
         package='skid_steer_robot',
         executable='agribot_physical_controller.py',
@@ -90,7 +96,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}]
     )
-    
+
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
@@ -98,8 +104,9 @@ def generate_launch_description():
             description='Use simulation time'
         ),
         robot_state_publisher,
-        joint_state_publisher,
         gazebo_launch,
         spawn_entity,
+        joint_state_broadcaster_spawner,
+        diff_drive_spawner,
         physical_controller
     ])
