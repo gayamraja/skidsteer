@@ -99,6 +99,35 @@
       </link>
     </model>
 
+    <!-- Belly Clearance Test: 40cm tall crop to verify 0.6m clearance -->
+    <!-- Tests that 36T jackshaft sprocket and chains stay above vegetation -->
+    <model name="crop_test">
+      <static>true</static>
+      <pose>1.5 0 0.2 0 0 0</pose>  <!-- 40cm tall crop at 1.5m in front of spawn -->
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <box>
+              <size>0.3 0.3 0.4</size>  <!-- 40cm tall crop -->
+            </box>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <box>
+              <size>0.3 0.3 0.4</size>
+            </box>
+          </geometry>
+          <material>
+            <script>
+              <uri>file://media/materials/scripts/gazebo.material</uri>
+              <name>Gazebo/Green</name>
+            </script>
+          </material>
+        </visual>
+      </link>
+    </model>
+
     <!-- Scene settings -->
     <scene>
       <ambient>0.6 0.6 0.5 1</ambient>

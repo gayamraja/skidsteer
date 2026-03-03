@@ -22,9 +22,13 @@ This simulation implements a 4-phase approach to create a digital twin of the Ag
 - **Wheel Width**: 0.101m (4 inches)
 - **Motor Power**: 1.5kW per side
 - **Total Reduction**: 22.5:1 (10:1 gearbox + 2.25:1 chain)
+  - **Chain Drive**: 16T (Gearbox) → 36T (Jackshaft) → 16T (Wheel)
+  - **Stage 1**: 16T→36T = 2.25:1
+  - **Stage 2**: 16T→16T = 1:1
 - **Max Torque**: 300Nm at gearbox output
 - **Motor RPM at 5 km/h**: 1,462 RPM
 - **Wheel RPM at 5 km/h**: 65 RPM
+- **Jackshaft**: 36T sprocket positioned in middle for ground clearance
 
 ## Hardware Constraints Simulated
 

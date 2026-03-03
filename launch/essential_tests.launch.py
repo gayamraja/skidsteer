@@ -101,6 +101,16 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}]
     )
     
+    # Belly clearance test (runs after safety tests)
+    clearance_test = Node(
+        package='skid_steer_robot',
+        executable='belly_clearance_test.py',
+        name='belly_clearance_test',
+        output='screen',
+        condition=IfCondition(run_tests),
+        parameters=[{'use_sim_time': use_sim_time}]
+    )
+    
     return LaunchDescription([
         DeclareLaunchArgument(
             'use_sim_time',
@@ -121,5 +131,10 @@ def generate_launch_description():
         TimerAction(
             period=5.0,
             actions=[safety_test]
+        ),
+        # Run belly clearance test after safety tests complete (~20 seconds)
+        TimerAction(
+            period=25.0,
+            actions=[clearance_test]
         )
     ])

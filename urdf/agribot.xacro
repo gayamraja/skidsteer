@@ -73,20 +73,54 @@
       </inertial>
     </link>
 
+    <!-- Jackshaft Link: 36T sprocket on middle jackshaft (two-stage chain drive) -->
+    <!-- 16T (Gearbox) → 36T (Jackshaft) → 16T (Wheel) = 2.25:1 chain reduction -->
+    <link name="${prefix}_jackshaft">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="0.08" length="0.06"/>  <!-- 36T sprocket ~16cm diameter -->
+        </geometry>
+        <material name="grey"/>
+      </visual>
+      <collision>
+        <geometry>
+          <cylinder radius="0.08" length="0.06"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <!-- Rotating mass of jackshaft + 36T sprocket acts as flywheel -->
+        <mass value="2.5"/>  <!-- Jackshaft + large sprocket weight -->
+        <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.02"/>
+      </inertial>
+    </link>
+
+    <!-- Jackshaft joint: Connects to leg at middle height (preserves 0.6m clearance) -->
+    <joint name="${prefix}_jackshaft_joint" type="continuous">
+      <parent link="${prefix}_leg"/>
+      <child link="${prefix}_jackshaft"/>
+      <!-- Positioned in middle of leg to keep 36T sprocket protected and high -->
+      <origin xyz="${x_reflect*0.02} ${y_reflect*0.1} -0.15" rpy="${pi/2} 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit effort="300" velocity="10.0"/>
+      <!-- Dual-chain damping: two chains = more backlash and damping -->
+      <dynamics damping="75.0" friction="15.0"/>
+    </joint>
+
     <!-- Continuous joint for wheel rotation -->
     <!-- Wheel offset: 0.25m leg attachment + 0.185m wheel offset = 0.435m (half of 0.87m track) -->
     <!-- Z offset: -0.3975m to place wheel at ground level (0.6m chassis - 0.2025m radius - 0.3975m = 0.0m) -->
-    <!-- Total reduction: 22.5:1 (10:1 gearbox + 2.25:1 chain) -->
+    <!-- Total reduction: 22.5:1 (10:1 gearbox + 2.25:1 chain: 16T→36T=2.25:1, 16T→16T=1:1) -->
     <joint name="${prefix}_wheel_joint" type="continuous">
-      <parent link="${prefix}_leg"/>
+      <parent link="${prefix}_jackshaft"/>  <!-- Wheel driven from jackshaft, not directly from leg -->
       <child link="${prefix}_wheel"/>
-      <origin xyz="${x_reflect*0.06} ${y_reflect*0.185} -0.3975" rpy="${-pi/2} 0 0"/>
+      <origin xyz="${x_reflect*0.04} ${y_reflect*0.085} -0.2475" rpy="${-pi/2} 0 0"/>
       <axis xyz="0 0 1"/>
       <!-- Max effort accounts for 22.5:1 reduction: 300Nm * 22.5 = 6750Nm at wheel -->
       <!-- But we cap at 300Nm to match gearbox rating -->
       <limit effort="300" velocity="10.0"/>
-      <!-- Gearbox friction and damping (10:1 gearbox has internal resistance) -->
-      <dynamics damping="50.0" friction="10.0"/>
+      <!-- Second chain stage: 16T to 16T (1:1) - less damping than first stage -->
+      <dynamics damping="25.0" friction="5.0"/>
     </joint>
     
     <!-- Gazebo friction parameters for skid-steer -->

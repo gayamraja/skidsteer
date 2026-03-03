@@ -1,5 +1,6 @@
 # Gazebo Physics Configuration
 # Friction and physics parameters for accurate simulation
+# Updated for dual-chain drive with jackshaft
 
 gazebo_physics:
   # Physics Engine Settings
@@ -16,5 +17,14 @@ gazebo_physics:
     kp: 1000000.0            # Contact stiffness
     kd: 10.0                 # Contact damping
     
+  # Dual-Chain Drive Characteristics
+  # Two-stage chain: 16T→36T (2.25:1) then 16T→16T (1:1)
+  chain_drive:
+    total_reduction: 2.25    # Chain reduction only (16T→36T)
+    system_reduction: 22.5   # Total with 10:1 gearbox
+    backlash: 0.02           # Increased backlash from two chains
+    damping_coefficient: 75.0  # Higher damping from dual-chain system
+    jackshaft_inertia: 0.02  # Rotational inertia of jackshaft + 36T sprocket
+    
   # Note: Wheel friction (mu1=1.1, mu2=0.5) is set in URDF
-  # These ground values provide complementary friction properties
+  # Jackshaft damping (75.0) and wheel damping (25.0) simulate dual-chain system
