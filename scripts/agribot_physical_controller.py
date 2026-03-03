@@ -14,15 +14,15 @@ class AgribotPhysicalController(Node):
     def __init__(self):
         super().__init__('agribot_physical_controller')
         
-        # Subscribe to cmd_vel (from teleop or other sources)
+        # Subscribe to raw cmd_vel (from teleop)
         self.cmd_sub = self.create_subscription(
             Twist,
-            '/cmd_vel',
+            '/cmd_vel_raw',  # Subscribe to raw input
             self.cmd_vel_callback,
             10
         )
         
-        # Publish to actual motor command topic
+        # Publish processed command to /cmd_vel (for diff_drive plugin)
         self.cmd_pub = self.create_publisher(Twist, '/cmd_vel', 10)
         
         # Physical Constants for 22.5:1 Gear Ratio

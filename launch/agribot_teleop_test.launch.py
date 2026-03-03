@@ -80,20 +80,12 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Physical controller (Step 34 logic)
+    # Physical controller (Step 34 logic) - replaces hardware_aware for basic test
+    # This controller processes teleop input and applies Step 34 jump logic
     physical_controller = Node(
         package='skid_steer_robot',
         executable='agribot_physical_controller.py',
         name='agribot_physical_controller',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
-    )
-    
-    # Hardware-aware controller (for diff_drive plugin)
-    hardware_controller = Node(
-        package='skid_steer_robot',
-        executable='hardware_aware_controller.py',
-        name='hardware_aware_controller',
         output='screen',
         parameters=[{'use_sim_time': use_sim_time}]
     )
@@ -108,6 +100,5 @@ def generate_launch_description():
         joint_state_publisher,
         gazebo_launch,
         spawn_entity,
-        physical_controller,
-        hardware_controller
+        physical_controller
     ])
