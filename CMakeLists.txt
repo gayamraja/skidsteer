@@ -47,6 +47,7 @@ install(DIRECTORY worlds/
 # Install Python scripts
 install(PROGRAMS
   scripts/hardware_aware_controller.py
+  scripts/agribot_physical_controller.py
   scripts/essential_safety_check.py
   scripts/belly_clearance_test.py
   DESTINATION lib/${PROJECT_NAME}
