@@ -20,7 +20,11 @@
   <depend>xacro</depend>
   <depend>gazebo_ros</depend>
   <depend>gazebo_plugins</depend>
+  <depend>gazebo_ros2_control</depend>
   <depend>robot_state_publisher</depend>
+  <depend>controller_manager</depend>
+  <depend>diff_drive_controller</depend>
+  <depend>joint_state_broadcaster</depend>
   <depend>launch</depend>
   <depend>launch_ros</depend>
 
