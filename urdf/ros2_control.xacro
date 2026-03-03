@@ -8,6 +8,7 @@
   <ros2_control name="GazeboSystem" type="system">
     <hardware>
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+      <param name="robot_param">robot_description</param>
     </hardware>
     
     <!-- Front Left Wheel -->
@@ -54,10 +55,10 @@
   <!-- Gazebo plugin for ros2_control -->
   <!-- This plugin provides the controller_manager service for Gazebo -->
   <!-- It loads the hardware and makes controllers available via ros2 control commands -->
-  <!-- The plugin automatically gets robot_description from parameter server -->
-  <!-- Note: Controllers.yaml is loaded via ros2 control commands, not here -->
+  <!-- The plugin gets robot_description from parameter server via robot_param -->
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <parameters>$(find skid_steer_robot)/config/agribot_controllers.yaml</parameters>
     </plugin>
   </gazebo>
 
