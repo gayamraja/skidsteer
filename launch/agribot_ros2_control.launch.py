@@ -67,6 +67,8 @@ def generate_launch_description():
     )
     
     # Spawn robot in Gazebo
+    # Note: The gazebo_ros2_control plugin will automatically get robot_description
+    # from the parameter server (published by robot_state_publisher)
     spawn_entity = Node(
         package='gazebo_ros',
         executable='spawn_entity.py',
