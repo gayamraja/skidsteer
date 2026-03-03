@@ -71,6 +71,25 @@ source install/setup.bash
 
 ## Usage
 
+### Basic Teleop Test (Step 34 Jump Test)
+
+This is the simplest test to verify the 22.5:1 reduction doesn't cause excessive "jump" at Step 34.
+
+**Terminal 1: Launch Gazebo with robot**
+```bash
+ros2 launch skid_steer_robot agribot_teleop_test.launch.py
+```
+
+**Terminal 2: Run keyboard teleop**
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
+**Test Procedure:**
+- Tap the `w` key **once** (brief forward command)
+- **Success**: Robot moves forward at a crawl without front wheels lifting
+- **Fail**: Robot "hops" or front wheels leave the ground (need to decrease MIN_PWM_STEP)
+
 ### Launch Main Simulation
 
 ```bash
@@ -78,7 +97,7 @@ ros2 launch skid_steer_robot agribot_sim.launch.py
 ```
 
 This will:
-- Start Gazebo with empty world
+- Start Gazebo with agricultural field world
 - Spawn the Agribot robot
 - Launch the hardware-aware controller
 - Publish robot state and TF transforms
