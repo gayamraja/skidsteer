@@ -183,19 +183,22 @@
         <imu>
           <angular_velocity>
             <x>
-              <noise type="gaussian">
+              <noise>
+                <type>gaussian</type>
                 <mean>0.0</mean>
                 <stddev>0.0002</stddev>
               </noise>
             </x>
             <y>
-              <noise type="gaussian">
+              <noise>
+                <type>gaussian</type>
                 <mean>0.0</mean>
                 <stddev>0.0002</stddev>
               </noise>
             </y>
             <z>
-              <noise type="gaussian">
+              <noise>
+                <type>gaussian</type>
                 <mean>0.0</mean>
                 <stddev>0.0002</stddev>
               </noise>
@@ -203,19 +206,22 @@
           </angular_velocity>
           <linear_acceleration>
             <x>
-              <noise type="gaussian">
+              <noise>
+                <type>gaussian</type>
                 <mean>0.0</mean>
                 <stddev>0.01</stddev>
               </noise>
             </x>
             <y>
-              <noise type="gaussian">
+              <noise>
+                <type>gaussian</type>
                 <mean>0.0</mean>
                 <stddev>0.01</stddev>
               </noise>
             </y>
             <z>
-              <noise type="gaussian">
+              <noise>
+                <type>gaussian</type>
                 <mean>0.0</mean>
                 <stddev>0.01</stddev>
               </noise>
