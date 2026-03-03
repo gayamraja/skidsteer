@@ -52,10 +52,11 @@
   </ros2_control>
 
   <!-- Gazebo plugin for ros2_control -->
-  <!-- Parameters are loaded via controller_manager node in launch file -->
-  <!-- The plugin itself doesn't need parameters - controller_manager handles it -->
+  <!-- This plugin provides the controller_manager service for Gazebo -->
+  <!-- It loads the hardware and makes controllers available via ros2 control commands -->
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <parameters>$(find skid_steer_robot)/config/agribot_controllers.yaml</parameters>
     </plugin>
   </gazebo>
 

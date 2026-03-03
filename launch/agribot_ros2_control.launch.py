@@ -81,22 +81,9 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Controller Manager - loads the controllers
-    # This node must start successfully for ros2 control commands to work
-    # Note: ros2_control_node needs robot_description as a parameter
-    controller_manager = Node(
-        package='controller_manager',
-        executable='ros2_control_node',
-        name='controller_manager',
-        parameters=[
-            {'robot_description': robot_description_content},
-            controllers_file,
-            {'use_sim_time': use_sim_time}
-        ],
-        output='screen',
-        respawn=True,  # Restart if it crashes
-        respawn_delay=2.0
-    )
+    # For Gazebo, the controller_manager is provided by the gazebo_ros2_control plugin
+    # We don't need to run ros2_control_node separately - Gazebo handles it
+    # Controllers are spawned using ros2 control commands after Gazebo is running
     
     return LaunchDescription([
         DeclareLaunchArgument(
@@ -107,9 +94,9 @@ def generate_launch_description():
         robot_state_publisher,
         joint_state_publisher,
         gazebo_launch,
-        spawn_entity,
-        controller_manager
-        # Note: Controllers must be spawned manually after launch:
+        spawn_entity
+        # Note: After Gazebo spawns the robot, the gazebo_ros2_control plugin provides controller_manager
+        # Wait a few seconds for Gazebo to fully load, then spawn controllers:
         # ros2 control load_controller diff_cont
         # ros2 control load_controller joint_state_broadcaster
         # ros2 control set_controller_state diff_cont active
