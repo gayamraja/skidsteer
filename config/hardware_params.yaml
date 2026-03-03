@@ -23,7 +23,18 @@ hardware_controller:
     update_rate: 50.0       # Controller update rate in Hz
     enabled: true            # Enable/disable soft-start
     
-  # Motor Limits
+  # Motor Limits with 22.5:1 Total Reduction (10:1 gearbox + 2.25:1 chain)
   motor:
-    max_torque: 300.0        # Maximum torque in Nm (matches gearbox/chain)
-    max_velocity: 10.0       # Maximum angular velocity in rad/s
+    max_torque: 300.0        # Maximum torque in Nm at gearbox output
+    max_velocity: 10.0       # Maximum angular velocity in rad/s at wheel
+    total_reduction: 22.5    # 10:1 gearbox × 2.25:1 chain = 22.5:1
+    motor_rpm_at_5kmh: 1462  # Motor RPM at 5 km/h (65 RPM wheel × 22.5)
+    wheel_rpm_at_5kmh: 65    # Wheel RPM at 5 km/h (1.38 m/s)
+    torque_multiplier: 22.5  # Torque multiplication from reduction
+    
+  # Gearbox Characteristics
+  gearbox:
+    ratio: 10.0              # 10:1 gearbox reduction
+    friction: 10.0           # Internal friction (acts as brake)
+    damping: 50.0            # Damping coefficient
+    backlash: 0.01           # Gear backlash in radians

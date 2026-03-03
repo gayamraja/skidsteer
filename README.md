@@ -21,7 +21,10 @@ This simulation implements a 4-phase approach to create a digital twin of the Ag
 - **Tires**: 4.00-8 (405mm diameter, 0.2025m radius)
 - **Wheel Width**: 0.101m (4 inches)
 - **Motor Power**: 1.5kW per side
-- **Max Torque**: 300Nm
+- **Total Reduction**: 22.5:1 (10:1 gearbox + 2.25:1 chain)
+- **Max Torque**: 300Nm at gearbox output
+- **Motor RPM at 5 km/h**: 1,462 RPM
+- **Wheel RPM at 5 km/h**: 65 RPM
 
 ## Hardware Constraints Simulated
 

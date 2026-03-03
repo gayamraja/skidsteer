@@ -76,20 +76,37 @@
     <!-- Continuous joint for wheel rotation -->
     <!-- Wheel offset: 0.25m leg attachment + 0.185m wheel offset = 0.435m (half of 0.87m track) -->
     <!-- Z offset: -0.3975m to place wheel at ground level (0.6m chassis - 0.2025m radius - 0.3975m = 0.0m) -->
+    <!-- Total reduction: 22.5:1 (10:1 gearbox + 2.25:1 chain) -->
     <joint name="${prefix}_wheel_joint" type="continuous">
       <parent link="${prefix}_leg"/>
       <child link="${prefix}_wheel"/>
       <origin xyz="${x_reflect*0.06} ${y_reflect*0.185} -0.3975" rpy="${-pi/2} 0 0"/>
       <axis xyz="0 0 1"/>
+      <!-- Max effort accounts for 22.5:1 reduction: 300Nm * 22.5 = 6750Nm at wheel -->
+      <!-- But we cap at 300Nm to match gearbox rating -->
       <limit effort="300" velocity="10.0"/>
+      <!-- Gearbox friction and damping (10:1 gearbox has internal resistance) -->
+      <dynamics damping="50.0" friction="10.0"/>
     </joint>
     
     <!-- Gazebo friction parameters for skid-steer -->
+    <!-- Gearbox friction acts as natural brake when power is cut -->
     <gazebo reference="${prefix}_wheel">
       <mu1>1.1</mu1>
       <mu2>0.5</mu2>
       <kp>1000000.0</kp>
       <kd>10.0</kd>
+      <!-- Gearbox damping to simulate 10:1 gearbox internal resistance -->
+      <minDepth>0.001</minDepth>
+      <maxVel>1.0</maxVel>
+    </gazebo>
+    
+    <!-- Gearbox joint damping (simulates 10:1 gearbox backlash and friction) -->
+    <gazebo reference="${prefix}_wheel_joint">
+      <implicitSpringDamper>true</implicitSpringDamper>
+      <stopCfm>0.1</stopCfm>
+      <stopErp>0.2</stopErp>
+      <fudgeFactor>0.5</fudgeFactor>
     </gazebo>
   </xacro:macro>
 

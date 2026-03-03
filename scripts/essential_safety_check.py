@@ -38,10 +38,13 @@ class EssentialSafetyCheck(Node):
         self.current_roll = 0.0
         self.max_pitch = 0.0
         self.max_roll = 0.0
+        self.current_velocity = 0.0
+        self.commanded_effort = 0.0
         self.test_phase = 0  # 0=wait, 1=pivot, 2=incline
         self.test_complete = False
         self.pivot_complete = False
         self.incline_complete = False
+        self.torque_warning_triggered = False
         
         # Wait for simulation to stabilize
         self.get_logger().info('Waiting 3 seconds for simulation to stabilize...')
@@ -77,9 +80,29 @@ class EssentialSafetyCheck(Node):
                 math.degrees(pitch), math.degrees(roll)
             ))
     
+    def check_torque_safety(self):
+        """Monitor for torque-induced pitch with 22.5:1 reduction"""
+        # With 22.5:1 reduction, if wheels get stuck, motor torque can lift the robot
+        # Check if velocity is low but pitch is increasing (torque lifting front)
+        if self.current_velocity < 0.1 and abs(self.current_pitch) > 0.15:  # 8.5 degrees
+            if not self.torque_warning_triggered:
+                self.torque_warning_triggered = True
+                self.get_logger().warn('HIGH TORQUE LIFT: 22.5:1 gearbox is overpowering the 0.6m chassis!')
+                self.get_logger().warn('Wheel may be stuck - motor torque is lifting robot instead of moving it')
+                # Emergency stop
+                cmd = Twist()
+                self.cmd_pub.publish(cmd)
+    
     def odom_callback(self, msg):
-        """Monitor position for test completion"""
-        pass  # Can be used to track movement if needed
+        """Monitor velocity and check for torque-induced pitch"""
+        # Get current velocity
+        self.current_velocity = abs(msg.twist.twist.linear.x)
+        
+        # Estimate commanded effort (simplified - in real system would read from motor controller)
+        # If velocity is low but we're commanding movement, high torque is being applied
+        if self.test_phase > 0:
+            # Check for torque-induced pitch (stuck wheel scenario)
+            self.check_torque_safety()
     
     def run_tests(self):
         """Run the two essential safety tests"""

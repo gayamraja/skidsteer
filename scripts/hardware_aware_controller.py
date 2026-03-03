@@ -213,6 +213,11 @@ class HardwareAwareController(Node):
         left_vel = linear - angular * wheel_separation / 2.0
         right_vel = linear + angular * wheel_separation / 2.0
         
+        # Account for 22.5:1 total reduction (10:1 gearbox + 2.25:1 chain)
+        # At 5 km/h (1.38 m/s), motor runs at 1462 RPM
+        # The "Step 34" jump now has 22.5x torque multiplier - very aggressive
+        # Soft-start is critical to prevent torque-induced tip-over
+        
         # Determine direction
         if left_vel > 0.01 or right_vel > 0.01:
             new_direction = Direction.FORWARD

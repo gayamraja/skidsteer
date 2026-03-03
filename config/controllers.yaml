@@ -1,5 +1,5 @@
 # Gazebo ROS Control Configuration
-# Controller settings for skid steer drive
+# Controller settings for skid steer drive with 22.5:1 total reduction
 
 controller_manager:
   ros__parameters:
@@ -10,22 +10,36 @@ controller_manager:
       type: joint_state_broadcaster/JointStateBroadcaster
 
     # Left Side Wheel Controllers (Front and Rear)
+    # With 22.5:1 reduction, need conservative gains to prevent shaking
     front_left_wheel_controller:
       type: effort_controllers/JointEffortController
       joint: front_left_wheel_joint
+      # Conservative gains for 22.5:1 reduction (prevents oscillation)
+      p_gain: 100.0
+      i_gain: 0.0
+      d_gain: 10.0
       
     rear_left_wheel_controller:
       type: effort_controllers/JointEffortController
       joint: rear_left_wheel_joint
+      p_gain: 100.0
+      i_gain: 0.0
+      d_gain: 10.0
 
     # Right Side Wheel Controllers (Front and Rear)
     front_right_wheel_controller:
       type: effort_controllers/JointEffortController
       joint: front_right_wheel_joint
+      p_gain: 100.0
+      i_gain: 0.0
+      d_gain: 10.0
       
     rear_right_wheel_controller:
       type: effort_controllers/JointEffortController
       joint: rear_right_wheel_joint
+      p_gain: 100.0
+      i_gain: 0.0
+      d_gain: 10.0
 
 # Controller groups for easy management
 skid_steer_controllers:
