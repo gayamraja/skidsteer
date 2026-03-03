@@ -59,6 +59,8 @@
   <!-- Controllers are loaded via ros2 control commands with config-file flag -->
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
+      <parameters>$(find skid_steer_robot)/config/agribot_controllers.yaml</parameters>
+      <robot_param>robot_description</robot_param>
     </plugin>
   </gazebo>
 
