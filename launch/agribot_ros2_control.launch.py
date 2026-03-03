@@ -101,5 +101,10 @@ def generate_launch_description():
         joint_state_publisher,
         gazebo_launch,
         spawn_entity,
-        controller_manager
+        controller_manager,
+        # Spawn controllers after a delay to ensure controller_manager is ready
+        TimerAction(
+            period=3.0,
+            actions=[spawn_joint_broadcaster, spawn_diff_cont]
+        )
     ])
