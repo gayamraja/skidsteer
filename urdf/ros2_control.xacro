@@ -8,7 +8,6 @@
   <ros2_control name="GazeboSystem" type="system">
     <hardware>
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
-      <param name="robot_param">robot_description</param>
     </hardware>
     
     <!-- Front Left Wheel -->

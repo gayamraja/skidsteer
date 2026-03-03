@@ -82,13 +82,15 @@ def generate_launch_description():
     
     # Controller Manager - loads the controllers
     # This node must start successfully for ros2 control commands to work
+    # Note: ros2_control_node needs robot_description as a parameter
     controller_manager = Node(
         package='controller_manager',
         executable='ros2_control_node',
         name='controller_manager',
         parameters=[
             {'robot_description': robot_description_content},
-            controllers_file
+            controllers_file,
+            {'use_sim_time': use_sim_time}
         ],
         output='screen',
         respawn=True,  # Restart if it crashes
