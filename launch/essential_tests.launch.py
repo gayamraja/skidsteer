@@ -53,6 +53,7 @@ def generate_launch_description():
     )
     
     # Gazebo launch with test bench world
+    # Set verbosity to 'error' to suppress model.config warnings
     gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([
             PathJoinSubstitution([
@@ -63,7 +64,7 @@ def generate_launch_description():
         ]),
         launch_arguments={
             'world': world_file,
-            'verbose': 'true'
+            'verbose': 'error'  # Only show errors, suppress warnings
         }.items()
     )
     
