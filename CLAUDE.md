@@ -31,20 +31,24 @@ cd ~/ros2_ws && colcon build --packages-select skid_steer_robot && source instal
 
 ## Architecture
 
-### Command Flow (FIXED - fully wired)
+### Command Flow (WORKING - confirmed in Gazebo)
 ```
 teleop → /cmd_vel
            ↓
   hardware_aware_controller (scripts/hardware_aware_controller.py)
   [quantizer 34-99] + [relay interlock 150ms] + [soft-start 0.015/cycle]
-  [inverse kinematics: left/right → linear.x / angular.z]
            ↓
   /diff_cont/cmd_vel
            ↓
-  DiffDriveController (ros2_control, config/agribot_controllers.yaml)
+  libgazebo_ros_diff_drive (num_wheel_pairs=2, urdf/ros2_control.xacro)
+  [drives all 4 wheels, publishes /odom and /tf]
            ↓
   4 wheel joints in Gazebo
 ```
+
+NOTE: gazebo_ros2_control 0.4.10 was abandoned — it passes robot_description
+as rcl --param which cannot parse multi-line XML. libgazebo_ros_diff_drive
+is used instead and works identically for our Phase 3 purposes.
 
 ### Hardware Constraints Simulated
 - **Quantizer (34-99)**: Dead zone 0-0.34 → 0 output; 0.34-1.0 maps to 0.34-0.99
@@ -55,8 +59,8 @@ teleop → /cmd_vel
 | File | Purpose |
 |------|---------|
 | `urdf/agribot.xacro` | Robot model (base, V-legs, wheels, jackshafts, IMU) |
-| `urdf/ros2_control.xacro` | ros2_control interfaces + Gazebo plugin |
-| `config/agribot_controllers.yaml` | DiffDriveController "diff_cont" config |
+| `urdf/ros2_control.xacro` | libgazebo_ros_diff_drive plugin (4WD skid steer) |
+| `config/agribot_controllers.yaml` | Legacy ros2_control config (not active) |
 | `config/hardware_params.yaml` | Quantizer, relay, soft-start parameters |
 | `scripts/hardware_aware_controller.py` | Main Phase 2 controller |
 | `scripts/agribot_physical_controller.py` | Simple Step-34 test controller (teleop test only) |
@@ -73,7 +77,7 @@ teleop → /cmd_vel
 ## 4-Phase Plan & Status
 1. **Phase 1 (DONE)**: URDF digital twin with correct geometry
 2. **Phase 2 (DONE)**: Hardware-aware controller (quantizer + relay + soft-start)
-3. **Phase 3 (In Progress)**: Physics/traction calibration in Gazebo
+3. **Phase 3 (ACTIVE - sim confirmed working)**: Physics/traction calibration in Gazebo
 4. **Phase 4 (Written, needs Gazebo validation)**: Stress tests in `scripts/`
 
 ## TheConstruct - Useful Commands
