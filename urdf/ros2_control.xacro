@@ -1,66 +1,47 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <!-- ros2_control configuration for Agribot -->
-  <!-- This replaces the simple diff_drive plugin with proper motor control -->
-  <!-- Accounts for 22.5:1 total reduction (10:1 gearbox + 2.25:1 chain) -->
-  
-  <ros2_control name="GazeboSystem" type="system">
-    <hardware>
-      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
-      <param name="robot_param">robot_description</param>
-    </hardware>
-    
-    <!-- Front Left Wheel -->
-    <joint name="front_left_wheel_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-    
-    <!-- Front Right Wheel -->
-    <joint name="front_right_wheel_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-    
-    <!-- Rear Left Wheel -->
-    <joint name="rear_left_wheel_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-    
-    <!-- Rear Right Wheel -->
-    <joint name="rear_right_wheel_joint">
-      <command_interface name="velocity">
-        <param name="min">-10</param>
-        <param name="max">10</param>
-      </command_interface>
-      <state_interface name="velocity"/>
-      <state_interface name="position"/>
-    </joint>
-  </ros2_control>
+  <!-- Gazebo Differential Drive Plugin for Agribot (4-wheel skid steer) -->
+  <!-- Uses libgazebo_ros_diff_drive instead of gazebo_ros2_control to avoid  -->
+  <!-- the rcl argument parser bug with XML passed as a param argument.       -->
+  <!-- Subscribes to /diff_cont/cmd_vel (output of hardware_aware_controller) -->
 
-  <!-- Gazebo plugin for ros2_control -->
-  <!-- This plugin provides the controller_manager service for Gazebo -->
-  <!-- It loads the hardware and makes controllers available via ros2 control commands -->
-  <!-- The plugin gets robot_description from parameter server automatically -->
-  <!-- Controllers are loaded via ros2 control commands with config-file flag -->
   <gazebo>
-    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
-      <parameters>$(find skid_steer_robot)/config/agribot_controllers.yaml</parameters>
-      <robot_param>robot_description</robot_param>
+    <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+      <ros>
+        <remapping>cmd_vel:=/diff_cont/cmd_vel</remapping>
+        <remapping>odom:=/odom</remapping>
+      </ros>
+
+      <!-- 4-wheel skid steer: 2 pairs (front and rear) -->
+      <num_wheel_pairs>2</num_wheel_pairs>
+
+      <!-- Pair 0: front wheels -->
+      <left_joint>front_left_wheel_joint</left_joint>
+      <right_joint>front_right_wheel_joint</right_joint>
+
+      <!-- Pair 1: rear wheels -->
+      <left_joint>rear_left_wheel_joint</left_joint>
+      <right_joint>rear_right_wheel_joint</right_joint>
+
+      <!-- Physical parameters matching agribot specs (one entry per pair) -->
+      <wheel_separation>0.87</wheel_separation>     <!-- front pair track width -->
+      <wheel_separation>0.87</wheel_separation>     <!-- rear pair track width -->
+      <wheel_diameter>0.405</wheel_diameter>         <!-- front pair: 4.00-8 tire -->
+      <wheel_diameter>0.405</wheel_diameter>         <!-- rear pair: 4.00-8 tire -->
+
+      <!-- Torque/velocity limits (22.5:1 reduction, 5 km/h max) -->
+      <max_wheel_torque>6750</max_wheel_torque>      <!-- 300Nm * 22.5:1 = 6750Nm -->
+      <max_wheel_acceleration>1.0</max_wheel_acceleration>
+
+      <!-- Odometry -->
+      <publish_odom>true</publish_odom>
+      <publish_odom_tf>true</publish_odom_tf>
+      <publish_wheel_tf>false</publish_wheel_tf>
+      <odometry_frame>odom</odometry_frame>
+      <robot_base_frame>base_link</robot_base_frame>
+
+      <update_rate>30</update_rate>
     </plugin>
   </gazebo>
 

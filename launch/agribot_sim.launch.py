@@ -8,11 +8,11 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
-from launch_ros.parameter_descriptions import ParameterValue
 from launch_ros.substitutions import FindPackageShare
 import os
+import subprocess
 
 def generate_launch_description():
     # Package directories
@@ -20,17 +20,22 @@ def generate_launch_description():
     urdf_file = os.path.join(pkg_share, 'urdf', 'agribot.xacro')
     # Use agricultural field world for terrain testing
     world_file = os.path.join(pkg_share, 'worlds', 'agriculture_field.world')
-    
+
     # Launch arguments
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     use_rviz = LaunchConfiguration('use_rviz', default='false')
-    
-    # Process xacro file to get robot description
-    robot_description_content = ParameterValue(
-        Command(['xacro ', urdf_file]),
-        value_type=str
+
+    # Process xacro and strip XML declaration.
+    # gazebo_ros2_control spawns controller_manager with robot_description as --param,
+    # and rcl's argument parser chokes on the <?xml ...?> prologue.
+    robot_description_raw = subprocess.run(
+        ['xacro', urdf_file], capture_output=True, text=True, check=True
+    ).stdout
+    robot_description = '\n'.join(
+        line for line in robot_description_raw.splitlines()
+        if not line.startswith('<?xml')
     )
-    
+
     # Robot State Publisher
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -38,8 +43,8 @@ def generate_launch_description():
         name='robot_state_publisher',
         output='screen',
         parameters=[
-            {'robot_description': robot_description_content},
-            {'use_sim_time': use_sim_time}
+            {'robot_description': robot_description},
+            {'use_sim_time': True}
         ]
     )
     
@@ -74,22 +79,6 @@ def generate_launch_description():
         output='screen'
     )
     
-    # Spawn joint_state_broadcaster (ros2_control publishes /joint_states)
-    joint_state_broadcaster_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['joint_state_broadcaster'],
-        output='screen'
-    )
-
-    # Spawn DiffDriveController
-    diff_drive_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['diff_cont'],
-        output='screen'
-    )
-
     # Hardware-aware controller
     hardware_controller = Node(
         package='skid_steer_robot',
@@ -122,8 +111,6 @@ def generate_launch_description():
         robot_state_publisher,
         gazebo_launch,
         spawn_entity,
-        joint_state_broadcaster_spawner,
-        diff_drive_spawner,
         hardware_controller,
         rviz
     ])
