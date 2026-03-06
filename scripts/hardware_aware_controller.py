@@ -14,6 +14,7 @@ import yaml
 import os
 from enum import Enum
 from rclpy.qos import QoSProfile, ReliabilityPolicy
+from ament_index_python.packages import get_package_share_directory
 
 class Direction(Enum):
     """Direction state for relay interlock"""
@@ -41,6 +42,8 @@ class HardwareAwareController(Node):
         self.direction_state = Direction.STOPPED
         self.interlock_active = False
         self.interlock_end_time = 0.0
+        self.last_cmd_time = 0.0
+        self.cmd_timeout = 0.5  # Stop if no cmd_vel received for 0.5s
 
         # Publisher: processed Twist goes directly to DiffDriveController
         self.drive_cmd_pub = self.create_publisher(
@@ -71,32 +74,11 @@ class HardwareAwareController(Node):
         
     def load_config(self):
         """Load hardware parameters from YAML file"""
-        # Try multiple possible paths
-        possible_paths = [
-            # Installed path (share directory)
-            os.path.join(
-                os.path.dirname(__file__),
-                '..', '..', '..', 'share', 'skid_steer_robot', 'config', 'hardware_params.yaml'
-            ),
-            # Source path
-            os.path.join(
-                os.path.dirname(__file__),
-                '..', 'config', 'hardware_params.yaml'
-            ),
-            # Alternative installed path
-            '/opt/ros/humble/share/skid_steer_robot/config/hardware_params.yaml'
-        ]
-        
-        config_path = None
-        for path in possible_paths:
-            abs_path = os.path.abspath(path)
-            if os.path.exists(abs_path):
-                config_path = abs_path
-                break
-        
-        if config_path is None:
-            # Use first path as default (will use defaults if not found)
-            config_path = os.path.abspath(possible_paths[0])
+        try:
+            pkg_share = get_package_share_directory('skid_steer_robot')
+            config_path = os.path.join(pkg_share, 'config', 'hardware_params.yaml')
+        except Exception:
+            config_path = os.path.join(os.path.dirname(__file__), '..', 'config', 'hardware_params.yaml')
         
         try:
             with open(config_path, 'r') as f:
@@ -200,6 +182,7 @@ class HardwareAwareController(Node):
     
     def cmd_vel_callback(self, msg):
         """Process incoming cmd_vel commands"""
+        self.last_cmd_time = self.get_clock().now().nanoseconds / 1e9
         # Convert Twist to left/right wheel velocities
         linear = msg.linear.x
         angular = msg.angular.z
@@ -239,6 +222,13 @@ class HardwareAwareController(Node):
     
     def update_controller(self):
         """Controller update loop: Apply soft-start ramping"""
+        # Safety timeout: stop if no cmd_vel received recently
+        if self.last_cmd_time > 0:
+            current_time = self.get_clock().now().nanoseconds / 1e9
+            if current_time - self.last_cmd_time > self.cmd_timeout:
+                self.target_left_cmd = 0.0
+                self.target_right_cmd = 0.0
+
         # Apply soft-start ramping
         self.current_left_cmd = self.apply_soft_start(
             self.target_left_cmd,

@@ -43,15 +43,6 @@ def generate_launch_description():
         ]
     )
     
-    # Joint State Publisher
-    joint_state_publisher = Node(
-        package='joint_state_publisher',
-        executable='joint_state_publisher',
-        name='joint_state_publisher',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
-    )
-    
     # Gazebo launch with test bench world
     # Set verbosity to 'error' to suppress model.config warnings
     gazebo_launch = IncludeLaunchDescription(
@@ -78,7 +69,7 @@ def generate_launch_description():
             '-topic', 'robot_description',
             '-x', '0.0',
             '-y', '0.0',
-            '-z', '0.7'  # Spawn above ground
+            '-z', '0.1'  # Spawn just above ground so wheels settle
         ],
         output='screen'
     )
@@ -93,13 +84,14 @@ def generate_launch_description():
     )
     
     # Essential safety check test (automated)
+    # use_sim_time=False so wall-clock timers fire at the right time
     safety_test = Node(
         package='skid_steer_robot',
         executable='essential_safety_check.py',
         name='essential_safety_check',
         output='screen',
         condition=IfCondition(run_tests),
-        parameters=[{'use_sim_time': use_sim_time}]
+        parameters=[{'use_sim_time': False}]
     )
     
     # Belly clearance test (runs after safety tests)
@@ -109,7 +101,7 @@ def generate_launch_description():
         name='belly_clearance_test',
         output='screen',
         condition=IfCondition(run_tests),
-        parameters=[{'use_sim_time': use_sim_time}]
+        parameters=[{'use_sim_time': False}]
     )
     
     return LaunchDescription([
@@ -124,18 +116,17 @@ def generate_launch_description():
             description='Run automated safety tests'
         ),
         robot_state_publisher,
-        joint_state_publisher,
         gazebo_launch,
         spawn_entity,
         hardware_controller,
         # Wait 5 seconds for Gazebo to load before starting tests
         TimerAction(
-            period=5.0,
+            period=15.0,
             actions=[safety_test]
         ),
         # Run belly clearance test after safety tests complete (~20 seconds)
         TimerAction(
-            period=25.0,
+            period=40.0,
             actions=[clearance_test]
         )
     ])

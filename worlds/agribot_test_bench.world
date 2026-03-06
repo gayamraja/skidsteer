@@ -23,7 +23,7 @@
     <!-- Pose: x=3.0m (in front of spawn), y=0, z=0.13m (half height), roll=0, pitch=-0.26rad (15°), yaw=0 -->
     <model name="test_ramp">
       <static>true</static>
-      <pose>3.0 0 0.13 0 -0.26 0</pose>
+      <pose>3.0 0 0.490 0 -0.26 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>

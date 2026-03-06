@@ -50,6 +50,10 @@ install(PROGRAMS
   scripts/agribot_physical_controller.py
   scripts/essential_safety_check.py
   scripts/belly_clearance_test.py
+  scripts/tip_over_test.py
+  scripts/pivot_stress_test.py
+  scripts/latency_test.py
+  scripts/static_tip_test.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
