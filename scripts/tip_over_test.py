@@ -41,16 +41,20 @@ class TipOverTest(Node):
         self.start_test()
     
     def start_test(self):
-        """Send maximum forward command"""
-        cmd = Twist()
-        cmd.linear.x = 1.0  # Maximum forward (will be quantized to 0.99)
-        cmd.angular.z = 0.0
-        self.cmd_pub.publish(cmd)
+        """Send maximum forward command and keep publishing to avoid 0.5s timeout"""
+        self._cmd = Twist()
+        self._cmd.linear.x = 1.0  # Maximum forward (will be quantized to 0.99)
+        self.cmd_pub.publish(self._cmd)
         self.test_started = True
         self.get_logger().info('Max forward command sent')
-        
+
+        # Keep publishing at 10 Hz so hardware controller does not time out
+        self._pub_timer = self.create_timer(0.1, self._republish)
         # Run test for 5 seconds
         self.create_timer(5.0, self.end_test)
+
+    def _republish(self):
+        self.cmd_pub.publish(self._cmd)
     
     def imu_callback(self, msg):
         """Monitor orientation from IMU"""

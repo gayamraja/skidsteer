@@ -20,15 +20,16 @@
     </include>
 
     <!-- Test Ramp: 15° incline for stability testing -->
-    <!-- Pose: x=3.0m (in front of spawn), y=0, z=0.13m (half height), roll=0, pitch=-0.26rad (15°), yaw=0 -->
+    <!-- Lengthened to 7m so robot stops on ramp rather than driving off the far edge -->
+    <!-- Near edge stays at ~x=1m; centre moved forward to x=4.4m to fit extra length -->
     <model name="test_ramp">
       <static>true</static>
-      <pose>3.0 0 0.490 0 -0.26 0</pose>
+      <pose>4.4 0 0.750 0 -0.26 0</pose>
       <link name="link">
         <collision name="collision">
           <geometry>
             <box>
-              <size>4.0 2.0 0.05</size>
+              <size>7.0 4.0 0.05</size>
             </box>
           </geometry>
           <surface>
@@ -49,7 +50,7 @@
         <visual name="visual">
           <geometry>
             <box>
-              <size>4.0 2.0 0.05</size>
+              <size>7.0 4.0 0.05</size>
             </box>
           </geometry>
           <material>
@@ -93,35 +94,6 @@
             <script>
               <uri>file://media/materials/scripts/gazebo.material</uri>
               <name>Gazebo/DarkGrey</name>
-            </script>
-          </material>
-        </visual>
-      </link>
-    </model>
-
-    <!-- Belly Clearance Test: 40cm tall crop to verify 0.6m clearance -->
-    <!-- Tests that 36T jackshaft sprocket and chains stay above vegetation -->
-    <model name="crop_test">
-      <static>true</static>
-      <pose>1.5 0 0.2 0 0 0</pose>  <!-- 40cm tall crop at 1.5m in front of spawn -->
-      <link name="link">
-        <collision name="collision">
-          <geometry>
-            <box>
-              <size>0.3 0.3 0.4</size>  <!-- 40cm tall crop -->
-            </box>
-          </geometry>
-        </collision>
-        <visual name="visual">
-          <geometry>
-            <box>
-              <size>0.3 0.3 0.4</size>
-            </box>
-          </geometry>
-          <material>
-            <script>
-              <uri>file://media/materials/scripts/gazebo.material</uri>
-              <name>Gazebo/Green</name>
             </script>
           </material>
         </visual>

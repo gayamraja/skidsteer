@@ -7,6 +7,10 @@
   <!-- Materials -->
   <material name="grey"><color rgba="0.5 0.5 0.5 1.0"/></material>
   <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
+  <material name="red"><color rgba="0.9 0.1 0.1 1.0"/></material>
+  <material name="blue"><color rgba="0.1 0.1 0.9 1.0"/></material>
+  <material name="white"><color rgba="1.0 1.0 1.0 1.0"/></material>
+  <material name="yellow"><color rgba="1.0 0.9 0.0 1.0"/></material>
 
   <!-- Base Link: High-clearance chassis at 600mm -->
   <!-- High-clearance agricultural design: 1.0m x 0.5m frame at 0.6m height -->
@@ -36,7 +40,7 @@
   <!-- V-Leg Macro: Creates leg and wheel assembly -->
   <!-- High-clearance: Longer, more vertical legs to reach 0.6m chassis height -->
   <!-- Corrected dimensions: 81cm (0.81m) wheelbase, 87cm (0.87m) track -->
-  <xacro:macro name="v_leg" params="prefix x_reflect y_reflect">
+  <xacro:macro name="v_leg" params="prefix x_reflect y_reflect side_color gazebo_color">
     <!-- Leg Link: Longer legs (0.55m) with more vertical angle for high clearance -->
     <link name="${prefix}_leg">
       <visual>
@@ -63,10 +67,11 @@
     </joint>
 
     <!-- Wheel Link: 4.00-8 tire (405mm diameter, 0.2025m radius) -->
+    <!-- Gazebo color set via gazebo tag below (URDF material tags are ignored by Gazebo) -->
     <link name="${prefix}_wheel">
       <visual>
         <geometry><cylinder radius="0.2025" length="0.12"/></geometry>
-        <material name="black"/>
+        <material name="${side_color}"/>
       </visual>
       <collision>
         <geometry><cylinder radius="0.2025" length="0.12"/></geometry>
@@ -76,6 +81,26 @@
         <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.15"/>
       </inertial>
     </link>
+
+    <!-- Dot Link: large yellow sphere on the rim, separate link so Gazebo can colour it -->
+    <!-- Fixed to wheel so it rotates with the wheel. At 0.17m offset it sweeps visibly. -->
+    <link name="${prefix}_wheel_dot">
+      <visual>
+        <geometry><sphere radius="0.08"/></geometry>
+        <material name="yellow"/>
+      </visual>
+      <inertial>
+        <mass value="0.01"/>
+        <inertia ixx="0.00001" ixy="0" ixz="0" iyy="0.00001" iyz="0" izz="0.00001"/>
+      </inertial>
+    </link>
+
+    <!-- Fixed joint: dot sits at wheel rim, rotates with wheel -->
+    <joint name="${prefix}_wheel_dot_joint" type="fixed">
+      <parent link="${prefix}_wheel"/>
+      <child link="${prefix}_wheel_dot"/>
+      <origin xyz="0.17 0 0" rpy="0 0 0"/>
+    </joint>
 
     <!-- Jackshaft Link: 36T sprocket on middle jackshaft (two-stage chain drive) -->
     <!-- 16T (Gearbox) → 36T (Jackshaft) → 16T (Wheel) = 2.25:1 chain reduction -->
@@ -128,16 +153,20 @@
       <dynamics damping="0.0" friction="0.0"/>
     </joint>
     
-    <!-- Gazebo friction parameters for skid-steer -->
-    <!-- Gearbox friction acts as natural brake when power is cut -->
+    <!-- Gazebo friction + colour for wheel -->
     <gazebo reference="${prefix}_wheel">
+      <material>Gazebo/${gazebo_color}</material>
       <mu1>1.1</mu1>
       <mu2>0.5</mu2>
       <kp>1000000.0</kp>
       <kd>10.0</kd>
-      <!-- Gearbox damping to simulate 10:1 gearbox internal resistance -->
       <minDepth>0.001</minDepth>
       <maxVel>1.0</maxVel>
+    </gazebo>
+
+    <!-- Gazebo colour for dot: bright yellow, no collision needed -->
+    <gazebo reference="${prefix}_wheel_dot">
+      <material>Gazebo/Yellow</material>
     </gazebo>
     
     <!-- Gearbox joint damping (simulates 10:1 gearbox backlash and friction) -->
@@ -147,11 +176,11 @@
     </gazebo>
   </xacro:macro>
 
-  <!-- Instantiate 4 V-legs: front_left, front_right, rear_left, rear_right -->
-  <xacro:v_leg prefix="front_left"  x_reflect="1"  y_reflect="1" />
-  <xacro:v_leg prefix="front_right" x_reflect="1"  y_reflect="-1" />
-  <xacro:v_leg prefix="rear_left"   x_reflect="-1" y_reflect="1" />
-  <xacro:v_leg prefix="rear_right"  x_reflect="-1" y_reflect="-1" />
+  <!-- Instantiate 4 V-legs: left=red, right=blue, all get yellow dot -->
+  <xacro:v_leg prefix="front_left"  x_reflect="1"  y_reflect="1"  side_color="red"  gazebo_color="Red" />
+  <xacro:v_leg prefix="front_right" x_reflect="1"  y_reflect="-1" side_color="blue" gazebo_color="Blue" />
+  <xacro:v_leg prefix="rear_left"   x_reflect="-1" y_reflect="1"  side_color="red"  gazebo_color="Red" />
+  <xacro:v_leg prefix="rear_right"  x_reflect="-1" y_reflect="-1" side_color="blue" gazebo_color="Blue" />
 
   <!-- IMU plugin for orientation monitoring (needed for safety tests) -->
   <gazebo reference="base_link">

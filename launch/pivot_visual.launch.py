@@ -1,11 +1,7 @@
 #!/usr/bin/env python3
 """
-Phase 4 Stress Test Suite
-Runs 4 tests sequentially in Gazebo with GUI:
-  T+15s  : Tip-Over Test       (~10s)
-  T+60s  : Pivot Stress Test   (~35s)
-  T+100s : Latency Test        (~15s)
-  T+130s : Static Tip Test     (~20s)
+Pivot Visual Launch: Gazebo + robot + 30-second pivot spin only.
+No incline, no crop test - just watch the yellow dots on the tires spin.
 """
 
 from launch import LaunchDescription
@@ -21,8 +17,6 @@ import os
 def generate_launch_description():
     pkg_share = FindPackageShare('skid_steer_robot').find('skid_steer_robot')
     urdf_file = os.path.join(pkg_share, 'urdf', 'agribot.xacro')
-    # Use test bench world — has ramp for static tip test
-    world_file = os.path.join(pkg_share, 'worlds', 'agribot_test_bench.world')
 
     robot_description_content = ParameterValue(
         Command(['xacro ', urdf_file]),
@@ -45,7 +39,7 @@ def generate_launch_description():
                 'launch', 'gazebo.launch.py'
             ])
         ]),
-        launch_arguments={'world': world_file, 'verbose': 'false'}.items()
+        launch_arguments={'verbose': 'false'}.items()
     )
 
     spawn_entity = Node(
@@ -67,34 +61,10 @@ def generate_launch_description():
         parameters=[{'use_sim_time': True}]
     )
 
-    tip_over_test = Node(
+    pivot_test = Node(
         package='skid_steer_robot',
-        executable='tip_over_test.py',
-        name='tip_over_test',
-        output='screen',
-        parameters=[{'use_sim_time': False}]
-    )
-
-    pivot_stress_test = Node(
-        package='skid_steer_robot',
-        executable='pivot_stress_test.py',
-        name='pivot_stress_test',
-        output='screen',
-        parameters=[{'use_sim_time': False}]
-    )
-
-    latency_test = Node(
-        package='skid_steer_robot',
-        executable='latency_test.py',
-        name='latency_test',
-        output='screen',
-        parameters=[{'use_sim_time': False}]
-    )
-
-    static_tip_test = Node(
-        package='skid_steer_robot',
-        executable='static_tip_test.py',
-        name='static_tip_test',
+        executable='pivot_visual_test.py',
+        name='pivot_visual_test',
         output='screen',
         parameters=[{'use_sim_time': False}]
     )
@@ -104,8 +74,6 @@ def generate_launch_description():
         gazebo_launch,
         spawn_entity,
         hardware_controller,
-        TimerAction(period=15.0,  actions=[pivot_stress_test]),   # ~65s — robot at spawn on flat ground
-        TimerAction(period=85.0,  actions=[tip_over_test]),       # ~10s — drives forward onto ramp
-        TimerAction(period=100.0, actions=[latency_test]),        # ~15s — direction changes
-        TimerAction(period=125.0, actions=[static_tip_test]),     # ~20s — drives up ramp
+        # Wait 10s for Gazebo to load before starting pivot
+        TimerAction(period=10.0, actions=[pivot_test]),
     ])

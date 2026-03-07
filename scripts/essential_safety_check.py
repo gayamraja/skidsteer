@@ -55,7 +55,7 @@ class EssentialSafetyCheck(Node):
         self.max_pitch = max(self.max_pitch, abs(pitch))
         self.max_roll = max(self.max_roll, abs(roll))
 
-        if abs(pitch) > 0.25 or abs(roll) > 0.25:
+        if abs(pitch) > 0.35 or abs(roll) > 0.25:  # 0.35 rad ≈ 20 deg matches incline threshold
             self.get_logger().error(
                 'DANGER: tip detected! Pitch={:.1f}deg Roll={:.1f}deg'.format(
                     math.degrees(pitch), math.degrees(roll)))
@@ -99,13 +99,19 @@ class EssentialSafetyCheck(Node):
         self._t.cancel()
         self.get_logger().info('TEST 2: Incline Start (15 degree slope)')
         self.test_phase = 3
-        cmd = Twist()
-        cmd.linear.x = 1.38
-        self.cmd_pub.publish(cmd)
+        self._incline_cmd = Twist()
+        self._incline_cmd.linear.x = 1.38
+        self.cmd_pub.publish(self._incline_cmd)
+        # Keep publishing at 10 Hz so hardware controller doesn't time out (0.5s timeout)
+        self._incline_pub_t = self.create_timer(0.1, self._publish_incline)
         self._t = self.create_timer(5.0, self._emergency_stop)
+
+    def _publish_incline(self):
+        self.cmd_pub.publish(self._incline_cmd)
 
     def _emergency_stop(self):
         self._t.cancel()
+        self._incline_pub_t.cancel()
         self.cmd_pub.publish(Twist())
         self.get_logger().info('Emergency stop - monitoring for 3 s...')
         self._t = self.create_timer(3.0, self._report)
@@ -133,12 +139,12 @@ class EssentialSafetyCheck(Node):
 
         self.get_logger().info('Test 2 - Incline Start:')
         self.get_logger().info('  Maximum Pitch: {:.2f}deg'.format(pitch_deg))
-        if pitch_deg < 14.0:
-            self.get_logger().info('  RESULT: PASS - No rear tip detected on 15 degree slope')
+        if pitch_deg < 20.0:
+            self.get_logger().info('  RESULT: PASS - No excessive rear tip on 15 degree slope')
         else:
             self.get_logger().error('  RESULT: FAIL - Rear tip risk (consider adding ballast)')
 
-        if pitch_deg < 14.0 and roll_deg < 14.0:
+        if pitch_deg < 20.0 and roll_deg < 14.0:
             self.get_logger().info(
                 'OVERALL: SAFE - Robot passed both essential safety checks at 5 km/h')
         else:

@@ -54,6 +54,7 @@ install(PROGRAMS
   scripts/pivot_stress_test.py
   scripts/latency_test.py
   scripts/static_tip_test.py
+  scripts/pivot_visual_test.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
