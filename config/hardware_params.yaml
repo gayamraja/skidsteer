@@ -50,9 +50,9 @@ serial_bridge:
   wheel_radius: 0.2025       # metres — 4.00-8 tyre radius
   gear_ratio: 22.5           # total reduction (10:1 gearbox × 2.25:1 chain)
 
-  # Encoder specs — UPDATE to match your actual encoder model
-  encoder_ticks_per_rev: 360 # encoder pulses per motor shaft revolution (before gearbox)
-                             # effective wheel ticks = ticks_per_rev × gear_ratio = 8100/rev
+  # Encoder on wheel shaft — 30 counts per full wheel revolution (confirmed)
+  # metres per tick = (2π × 0.2025) / 30 = 0.04241 m
+  encoder_ticks_per_wheel_rev: 30
 
   # Watchdog — Arduino stops motors if no CMD received within this window
   watchdog_timeout_ms: 200   # milliseconds

@@ -45,7 +45,7 @@ class SerialBridgeNode(Node):
         self.declare_parameter('track_width', 0.87)
         self.declare_parameter('wheel_radius', 0.2025)
         self.declare_parameter('gear_ratio', 22.5)
-        self.declare_parameter('encoder_ticks_per_rev', 360)
+        self.declare_parameter('encoder_ticks_per_wheel_rev', 30)
         self.declare_parameter('max_current_amps', 40.0)
 
         self.port = self.get_parameter('port').value
@@ -54,11 +54,10 @@ class SerialBridgeNode(Node):
         self.track_width = self.get_parameter('track_width').value
         self.wheel_radius = self.get_parameter('wheel_radius').value
         self.gear_ratio = self.get_parameter('gear_ratio').value
-        ticks_per_motor_rev = self.get_parameter('encoder_ticks_per_rev').value
         self.max_current = self.get_parameter('max_current_amps').value
 
-        # Ticks per wheel revolution (after full gear reduction)
-        self.ticks_per_wheel_rev = ticks_per_motor_rev * self.gear_ratio
+        # Encoder is on the wheel shaft — 30 counts per full wheel revolution
+        self.ticks_per_wheel_rev = self.get_parameter('encoder_ticks_per_wheel_rev').value
         # Metres per tick
         self.metres_per_tick = (2.0 * math.pi * self.wheel_radius) / self.ticks_per_wheel_rev
         # Max wheel surface speed (maps normalised 1.0 → this m/s)
