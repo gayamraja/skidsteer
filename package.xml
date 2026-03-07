@@ -28,6 +28,9 @@
   <depend>launch</depend>
   <depend>launch_ros</depend>
 
+  <!-- Real hardware: Python serial bridge (pip3 install pyserial) -->
+  <exec_depend>python3-serial</exec_depend>
+
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
 

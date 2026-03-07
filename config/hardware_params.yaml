@@ -38,3 +38,28 @@ hardware_controller:
     friction: 10.0           # Internal friction (acts as brake)
     damping: 50.0            # Damping coefficient
     backlash: 0.01           # Gear backlash in radians
+
+# Serial Bridge Node Parameters (RPi <-> Arduino over USB serial)
+serial_bridge:
+  port: /dev/ttyACM0         # Arduino USB port (try /dev/ttyUSB0 if ACM0 not found)
+  baud: 115200               # Baud rate
+  command_rate: 50.0         # Hz — must match hardware_controller update_rate
+
+  # Robot geometry (must match urdf/agribot.xacro)
+  track_width: 0.87          # metres — distance between left and right wheel centres
+  wheel_radius: 0.2025       # metres — 4.00-8 tyre radius
+  gear_ratio: 22.5           # total reduction (10:1 gearbox × 2.25:1 chain)
+
+  # Encoder specs — UPDATE to match your actual encoder model
+  encoder_ticks_per_rev: 360 # encoder pulses per motor shaft revolution (before gearbox)
+                             # effective wheel ticks = ticks_per_rev × gear_ratio = 8100/rev
+
+  # Watchdog — Arduino stops motors if no CMD received within this window
+  watchdog_timeout_ms: 200   # milliseconds
+
+  # Backlash compensation (applied by Arduino on direction change)
+  backlash_power: 0.20       # 20% power to take up chain slack
+  backlash_duration_ms: 50   # milliseconds at backlash_power before full ramp
+
+  # Current limiting (ACS758 sensor on Arduino)
+  max_current_amps: 40.0     # hard cutoff per channel
