@@ -15,29 +15,47 @@
  *   Arduino → RPi  : FB:<l_ticks> <r_ticks> <l_amps> <r_amps> <status>\n
  *   status values  : OK | ESTOP | WATCHDOG | OVERCURRENT
  *
- * Pin assignments — adjust to your wiring:
- *   Left  motor : PWM = 5,  DIR = 4
- *   Right motor : PWM = 6,  DIR = 7
- *   Left  encoder : A = 2 (INT0),  B = 3  (INT1)
- *   Right encoder : A = 18 (INT5), B = 19 (INT4)  [Mega pins]
- *   Left  current : A0
- *   Right current : A1
+ * Target board: Arduino Nano R3 (ATmega328P)
  *
- * Designed for Arduino Mega 2560 (interrupt pins 2,3,18,19 available).
- * For Uno, only INT0 (pin 2) and INT1 (pin 3) are available — use
- * software pin-change interrupts for the second encoder.
+ * Throttle output: Digital potentiometer chip (X9C103 or equivalent)
+ *   INC pin — pulse LOW then HIGH to step wiper one position
+ *   U/D pin — HIGH = increment up, LOW = increment down
+ *   CS  pin — LOW to enable chip, HIGH to disable
+ *   Wiper output connects directly to motor controller throttle wire.
+ *   Steps 0-99: step 0 = 0V (stopped), step 34 = minimum active throttle,
+ *   step 99 = maximum throttle (~4.2V on a 5V supply).
+ *
+ * Direction output: Relay module driven by DIR pin
+ *   LOW  = Forward  (relay de-energised, matches previous project)
+ *   HIGH = Reverse  (relay energised)
+ *   150 ms dead-time enforced before switching direction.
+ *
+ * Pin assignments:
+ *   Left  motor : INC=5, UD=10, CS=11, DIR=4
+ *   Right motor : INC=6, UD=12, CS=13, DIR=7
+ *   Left  encoder : A=2 (INT0 hardware interrupt), B=3
+ *   Right encoder : A=8 (PCINT0 pin-change interrupt), B=9
+ *   Left  current : A0  (ACS758 VIOUT)
+ *   Right current : A1  (ACS758 VIOUT)
+ *
+ *   Shared GND between Arduino and both motor controllers is mandatory.
  */
 
 // ── Pin definitions ──────────────────────────────────────────────────────────
-#define LEFT_PWM_PIN    5
 #define LEFT_DIR_PIN    4
-#define RIGHT_PWM_PIN   6
+#define LEFT_POT_INC    5
+#define RIGHT_POT_INC   6
 #define RIGHT_DIR_PIN   7
 
-#define LEFT_ENC_A      2    // INT0
-#define LEFT_ENC_B      3    // INT1
-#define RIGHT_ENC_A     18   // INT5 (Mega only)
-#define RIGHT_ENC_B     19   // INT4 (Mega only)
+#define LEFT_ENC_A      2    // INT0 — hardware interrupt
+#define LEFT_ENC_B      3    // read inside ISR for direction
+#define RIGHT_ENC_A     8    // PCINT0 — pin-change interrupt (Nano PB0)
+#define RIGHT_ENC_B     9    // read inside PCINT ISR for direction
+
+#define LEFT_POT_UD     10
+#define LEFT_POT_CS     11
+#define RIGHT_POT_UD    12
+#define RIGHT_POT_CS    13
 
 #define LEFT_CURRENT_PIN   A0
 #define RIGHT_CURRENT_PIN  A1
@@ -47,21 +65,22 @@
 #define LOOP_HZ             50          // control + feedback rate
 #define LOOP_MS             (1000 / LOOP_HZ)
 
-#define SLEW_RATE           0.015f      // max normalised change per cycle (matches ROS soft-start)
-#define RELAY_DEAD_TIME_MS  150         // direction-change pause
+#define SLEW_RATE           0.015f      // max normalised change per cycle
+#define RELAY_DEAD_TIME_MS  150         // direction-change pause (ms)
 #define BACKLASH_POWER      0.20f       // normalised power during backlash take-up
-#define BACKLASH_MS         50          // duration of backlash pulse
-#define WATCHDOG_MS         200         // stop if no CMD within this window
+#define BACKLASH_MS         50          // duration of backlash pulse (ms)
+#define WATCHDOG_MS         200         // stop if no CMD within this window (ms)
 
-#define MAX_PWM             255         // Arduino analogWrite ceiling
-#define MIN_ACTIVE_PWM      87          // corresponds to Step 34 (34/99 * 255 ≈ 87)
+// Digital pot step range — mirrors the 34-99 quantizer in ROS controller
+#define MAX_STEP            99          // wiper fully up
+#define MIN_ACTIVE_STEP     34          // minimum step where motors start moving
 
 #define ACS758_SENSITIVITY  0.04f       // V/A for ACS758-050B (adjust for your model)
 #define ACS758_VREF         2.5f        // zero-current output voltage (V)
 #define ADC_VREF            5.0f        // Arduino ADC reference voltage
 #define MAX_CURRENT_AMPS    40.0f       // per-channel cutoff
 
-// ── State machine for each motor channel ────────────────────────────────────
+// ── State machine for each motor channel ─────────────────────────────────────
 enum ChannelState {
     STATE_IDLE,
     STATE_BACKLASH,
@@ -70,9 +89,12 @@ enum ChannelState {
 };
 
 struct Channel {
-    uint8_t pwm_pin;
     uint8_t dir_pin;
     uint8_t cur_pin;
+    uint8_t pot_inc_pin;
+    uint8_t pot_ud_pin;
+    uint8_t pot_cs_pin;
+    int     pot_step;        // current wiper position (0-99)
 
     float   target;          // normalised target (-1.0 to +1.0)
     float   actual;          // current normalised output (after slew)
@@ -85,11 +107,16 @@ struct Channel {
     float         amps;
 };
 
-static Channel left_ch  = {LEFT_PWM_PIN,  LEFT_DIR_PIN,  LEFT_CURRENT_PIN,  0,0,0, STATE_IDLE,0,0,0};
-static Channel right_ch = {RIGHT_PWM_PIN, RIGHT_DIR_PIN, RIGHT_CURRENT_PIN, 0,0,0, STATE_IDLE,0,0,0};
+static Channel left_ch  = {LEFT_DIR_PIN,  LEFT_CURRENT_PIN,
+                            LEFT_POT_INC,  LEFT_POT_UD,  LEFT_POT_CS,  0,
+                            0, 0, 0, STATE_IDLE, 0, 0, 0};
 
-// ── Watchdog ─────────────────────────────────────────────────────────────────
-static uint32_t last_cmd_ms = 0;
+static Channel right_ch = {RIGHT_DIR_PIN, RIGHT_CURRENT_PIN,
+                            RIGHT_POT_INC, RIGHT_POT_UD, RIGHT_POT_CS, 0,
+                            0, 0, 0, STATE_IDLE, 0, 0, 0};
+
+// ── Watchdog ──────────────────────────────────────────────────────────────────
+static uint32_t last_cmd_ms    = 0;
 static bool     watchdog_fired = false;
 static bool     overcurrent    = false;
 static bool     estop          = false;
@@ -99,35 +126,96 @@ static char    rx_buf[64];
 static uint8_t rx_idx = 0;
 
 // ── Encoder ISRs ─────────────────────────────────────────────────────────────
-void IRAM_ATTR left_enc_isr() {
+
+// Left encoder — hardware interrupt on D2 (INT0)
+void left_enc_isr() {
     if (digitalRead(LEFT_ENC_B) == HIGH) left_ch.encoder_ticks++;
     else                                  left_ch.encoder_ticks--;
 }
 
-void IRAM_ATTR right_enc_isr() {
-    if (digitalRead(RIGHT_ENC_B) == HIGH) right_ch.encoder_ticks++;
-    else                                   right_ch.encoder_ticks--;
+// Right encoder — pin-change interrupt on D8 (PCINT0, PB0)
+// PCINT fires on both rising and falling edges; we detect rising edge manually.
+ISR(PCINT0_vect) {
+    static bool prev_state = false;
+    bool current = (PINB & (1 << PB0)) != 0;   // read D8 directly from port register
+    if (current && !prev_state) {               // rising edge only
+        if (digitalRead(RIGHT_ENC_B) == HIGH) right_ch.encoder_ticks++;
+        else                                   right_ch.encoder_ticks--;
+    }
+    prev_state = current;
+}
+
+// ── Digital pot helpers ───────────────────────────────────────────────────────
+
+// Reset wiper to position 0 by stepping down 99 times.
+// Call once in setup() before any motion.
+void reset_pot(Channel& ch) {
+    digitalWrite(ch.pot_ud_pin, LOW);   // direction: down
+    digitalWrite(ch.pot_cs_pin, LOW);   // enable chip
+    for (int i = 0; i < 99; i++) {
+        digitalWrite(ch.pot_inc_pin, LOW);
+        delayMicroseconds(2);
+        digitalWrite(ch.pot_inc_pin, HIGH);
+        delayMicroseconds(2);
+    }
+    digitalWrite(ch.pot_cs_pin, HIGH);  // disable chip
+    ch.pot_step = 0;
+}
+
+// Move wiper to target_step (0-99) from current position.
+void step_pot_to(Channel& ch, int target_step) {
+    target_step = constrain(target_step, 0, 99);
+    int diff = target_step - ch.pot_step;
+    if (diff == 0) return;
+
+    bool up    = (diff > 0);
+    int  steps = abs(diff);
+
+    digitalWrite(ch.pot_ud_pin, up ? HIGH : LOW);
+    digitalWrite(ch.pot_cs_pin, LOW);   // enable
+    for (int i = 0; i < steps; i++) {
+        digitalWrite(ch.pot_inc_pin, LOW);
+        delayMicroseconds(2);
+        digitalWrite(ch.pot_inc_pin, HIGH);
+        delayMicroseconds(2);
+    }
+    digitalWrite(ch.pot_cs_pin, HIGH);  // disable
+    ch.pot_step = target_step;
 }
 
 // ── Setup ─────────────────────────────────────────────────────────────────────
 void setup() {
     Serial.begin(BAUD_RATE);
 
-    pinMode(LEFT_PWM_PIN,  OUTPUT);
-    pinMode(LEFT_DIR_PIN,  OUTPUT);
-    pinMode(RIGHT_PWM_PIN, OUTPUT);
-    pinMode(RIGHT_DIR_PIN, OUTPUT);
+    // Direction relay pins — default LOW = forward
+    pinMode(LEFT_DIR_PIN,  OUTPUT);  digitalWrite(LEFT_DIR_PIN,  LOW);
+    pinMode(RIGHT_DIR_PIN, OUTPUT);  digitalWrite(RIGHT_DIR_PIN, LOW);
 
+    // Digital pot pins — CS high (disabled), INC high (idle)
+    pinMode(LEFT_POT_INC,  OUTPUT);  digitalWrite(LEFT_POT_INC,  HIGH);
+    pinMode(LEFT_POT_UD,   OUTPUT);  digitalWrite(LEFT_POT_UD,   HIGH);
+    pinMode(LEFT_POT_CS,   OUTPUT);  digitalWrite(LEFT_POT_CS,   HIGH);
+
+    pinMode(RIGHT_POT_INC, OUTPUT);  digitalWrite(RIGHT_POT_INC, HIGH);
+    pinMode(RIGHT_POT_UD,  OUTPUT);  digitalWrite(RIGHT_POT_UD,  HIGH);
+    pinMode(RIGHT_POT_CS,  OUTPUT);  digitalWrite(RIGHT_POT_CS,  HIGH);
+
+    // Encoder pins — internal pull-ups
     pinMode(LEFT_ENC_A,  INPUT_PULLUP);
     pinMode(LEFT_ENC_B,  INPUT_PULLUP);
     pinMode(RIGHT_ENC_A, INPUT_PULLUP);
     pinMode(RIGHT_ENC_B, INPUT_PULLUP);
 
-    attachInterrupt(digitalPinToInterrupt(LEFT_ENC_A),  left_enc_isr,  RISING);
-    attachInterrupt(digitalPinToInterrupt(RIGHT_ENC_A), right_enc_isr, RISING);
+    // Left encoder — hardware interrupt (INT0 on D2)
+    attachInterrupt(digitalPinToInterrupt(LEFT_ENC_A), left_enc_isr, RISING);
 
-    set_motor_pwm(left_ch,  0.0f);
-    set_motor_pwm(right_ch, 0.0f);
+    // Right encoder — pin-change interrupt (PCINT0 on D8 = PB0)
+    PCICR  |= (1 << PCIE0);    // enable PCINT0..7 group
+    PCMSK0 |= (1 << PCINT0);   // enable PCINT0 specifically (D8)
+
+    // Reset both digital pots to wiper position 0
+    reset_pot(left_ch);
+    reset_pot(right_ch);
 
     last_cmd_ms = millis();
 }
@@ -177,25 +265,25 @@ void loop() {
         update_channel(left_ch,  now);
         update_channel(right_ch, now);
     } else {
-        set_motor_pwm(left_ch,  0.0f);
-        set_motor_pwm(right_ch, 0.0f);
+        set_motor_output(left_ch,  0.0f);
+        set_motor_output(right_ch, 0.0f);
     }
 
     // ── Send feedback ───────────────────────────────────────────────────────
     const char* status = "OK";
-    if      (estop)       status = "ESTOP";
+    if      (estop)          status = "ESTOP";
     else if (watchdog_fired) status = "WATCHDOG";
-    else if (overcurrent) status = "OVERCURRENT";
+    else if (overcurrent)    status = "OVERCURRENT";
 
-    // Snapshot ticks atomically
+    // Snapshot encoder ticks atomically
     noInterrupts();
     long lt = left_ch.encoder_ticks;
     long rt = right_ch.encoder_ticks;
     interrupts();
 
     Serial.print("FB:");
-    Serial.print(lt);   Serial.print(' ');
-    Serial.print(rt);   Serial.print(' ');
+    Serial.print(lt);              Serial.print(' ');
+    Serial.print(rt);              Serial.print(' ');
     Serial.print(left_ch.amps,  2); Serial.print(' ');
     Serial.print(right_ch.amps, 2); Serial.print(' ');
     Serial.println(status);
@@ -208,7 +296,6 @@ void parse_cmd(const char* buf) {
     float l, r;
     if (sscanf(buf + 4, "%f %f", &l, &r) != 2) return;
 
-    // Clamp
     l = constrain(l, -1.0f, 1.0f);
     r = constrain(r, -1.0f, 1.0f);
 
@@ -230,37 +317,37 @@ void update_channel(Channel& ch, uint32_t now) {
             bool dir_change = (target_dir != 0) && (ch.direction != 0) && (target_dir != ch.direction);
 
             if (dir_change) {
-                // First ramp down to zero
+                // Ramp down to zero first
                 ch.target = 0.0f;
                 slew(ch);
                 if (fabsf(ch.actual) < 0.001f) {
-                    // Begin relay dead-time
+                    // Motor at zero — begin relay dead-time
                     ch.state          = STATE_RELAY_PAUSE;
                     ch.state_enter_ms = now;
-                    set_motor_pwm(ch, 0.0f);
+                    set_motor_output(ch, 0.0f);
                 }
             } else {
                 slew(ch);
                 ch.direction = target_dir;
-                set_motor_pwm(ch, ch.actual);
+                set_motor_output(ch, ch.actual);
                 ch.state = (fabsf(ch.actual) > 0.001f) ? STATE_RUNNING : STATE_IDLE;
             }
             break;
         }
 
         case STATE_RELAY_PAUSE:
-            set_motor_pwm(ch, 0.0f);
+            set_motor_output(ch, 0.0f);
             if ((now - ch.state_enter_ms) >= (uint32_t)RELAY_DEAD_TIME_MS) {
-                // Begin backlash compensation
+                // Dead-time elapsed — begin backlash compensation
                 ch.state          = STATE_BACKLASH;
                 ch.state_enter_ms = now;
                 ch.direction      = target_dir;
-                set_motor_pwm(ch, BACKLASH_POWER * target_dir);
+                set_motor_output(ch, BACKLASH_POWER * target_dir);
             }
             break;
 
         case STATE_BACKLASH:
-            set_motor_pwm(ch, BACKLASH_POWER * (float)ch.direction);
+            set_motor_output(ch, BACKLASH_POWER * (float)ch.direction);
             if ((now - ch.state_enter_ms) >= (uint32_t)BACKLASH_MS) {
                 ch.actual = BACKLASH_POWER * (float)ch.direction;
                 ch.state  = STATE_RUNNING;
@@ -279,22 +366,25 @@ void slew(Channel& ch) {
     }
 }
 
-// ── Apply normalised value to motor pins ──────────────────────────────────────
-void set_motor_pwm(Channel& ch, float norm) {
+// ── Apply normalised value to motor (digital pot + relay) ─────────────────────
+void set_motor_output(Channel& ch, float norm) {
     norm = constrain(norm, -1.0f, 1.0f);
 
-    bool forward = (norm >= 0.0f);
+    bool  forward   = (norm >= 0.0f);
     float magnitude = fabsf(norm);
 
-    // Map non-zero magnitude to MIN_ACTIVE_PWM..MAX_PWM
-    int pwm = 0;
+    // Map magnitude to pot step (0-99), enforcing minimum active step
+    int target_step = 0;
     if (magnitude > 0.001f) {
-        pwm = (int)(MIN_ACTIVE_PWM + magnitude * (MAX_PWM - MIN_ACTIVE_PWM));
-        pwm = constrain(pwm, MIN_ACTIVE_PWM, MAX_PWM);
+        target_step = (int)(MIN_ACTIVE_STEP + magnitude * (MAX_STEP - MIN_ACTIVE_STEP));
+        target_step = constrain(target_step, MIN_ACTIVE_STEP, MAX_STEP);
     }
 
-    digitalWrite(ch.dir_pin, forward ? HIGH : LOW);
-    analogWrite(ch.pwm_pin, pwm);
+    // Direction relay: LOW = forward, HIGH = reverse
+    digitalWrite(ch.dir_pin, forward ? LOW : HIGH);
+
+    // Move digital pot wiper to target step
+    step_pot_to(ch, target_step);
 }
 
 // ── ACS758 current reading ────────────────────────────────────────────────────
