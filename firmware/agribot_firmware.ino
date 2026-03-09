@@ -71,9 +71,13 @@
 #define BACKLASH_MS         50          // duration of backlash pulse (ms)
 #define WATCHDOG_MS         200         // stop if no CMD within this window (ms)
 
-// Digital pot step range — mirrors the 34-99 quantizer in ROS controller
-#define MAX_STEP            99          // wiper fully up
-#define MIN_ACTIVE_STEP     34          // minimum step where motors start moving
+// Digital pot step range
+// RH=5V, RL=GND → wiper voltage = (step/99) × 5V
+// E-rickshaw controller throttle range: 0.8V (min) to 4.2V (max)
+// Step 34 = 1.72V (above 0.8V threshold) — minimum active
+// Step 83 = 4.19V (≈4.2V max) — cap here to avoid over-voltage on controller
+#define MAX_STEP            83          // (83/99 × 5V = 4.19V ≈ controller max)
+#define MIN_ACTIVE_STEP     34          // (34/99 × 5V = 1.72V, above 0.8V threshold)
 
 #define ACS758_SENSITIVITY  0.04f       // V/A for ACS758-050B (adjust for your model)
 #define ACS758_VREF         2.5f        // zero-current output voltage (V)
