@@ -35,8 +35,7 @@
  *   Right motor : INC=6, UD=12, CS=13, DIR=7
  *   Left  encoder : A=2 (INT0 hardware interrupt), B=3
  *   Right encoder : A=8 (PCINT0 pin-change interrupt), B=9
- *   Left  current : A0  (ACS758 VIOUT)
- *   Right current : A1  (ACS758 VIOUT)
+ *   Current sensing: NOT USED — e-rickshaw controllers have built-in protection.
  *
  *   Shared GND between Arduino and both motor controllers is mandatory.
  */
@@ -57,8 +56,8 @@
 #define RIGHT_POT_UD    12
 #define RIGHT_POT_CS    13
 
-#define LEFT_CURRENT_PIN   A0
-#define RIGHT_CURRENT_PIN  A1
+// Current sensing disabled — e-rickshaw controllers have built-in protection.
+// A0 and A1 are free for future use.
 
 // ── Tunable parameters ───────────────────────────────────────────────────────
 #define BAUD_RATE           115200
@@ -79,10 +78,7 @@
 #define MAX_STEP            83          // (83/99 × 5V = 4.19V ≈ controller max)
 #define MIN_ACTIVE_STEP     34          // (34/99 × 5V = 1.72V, above 0.8V threshold)
 
-#define ACS758_SENSITIVITY  0.04f       // V/A for ACS758-050B (adjust for your model)
-#define ACS758_VREF         2.5f        // zero-current output voltage (V)
-#define ADC_VREF            5.0f        // Arduino ADC reference voltage
-#define MAX_CURRENT_AMPS    40.0f       // per-channel cutoff
+// No current sensing — removed (controllers handle their own overcurrent protection)
 
 // ── State machine for each motor channel ─────────────────────────────────────
 enum ChannelState {
@@ -94,7 +90,6 @@ enum ChannelState {
 
 struct Channel {
     uint8_t dir_pin;
-    uint8_t cur_pin;
     uint8_t pot_inc_pin;
     uint8_t pot_ud_pin;
     uint8_t pot_cs_pin;
@@ -108,21 +103,18 @@ struct Channel {
     uint32_t     state_enter_ms;
 
     volatile long encoder_ticks;
-    float         amps;
 };
 
-static Channel left_ch  = {LEFT_DIR_PIN,  LEFT_CURRENT_PIN,
-                            LEFT_POT_INC,  LEFT_POT_UD,  LEFT_POT_CS,  0,
-                            0, 0, 0, STATE_IDLE, 0, 0, 0};
+static Channel left_ch  = {LEFT_DIR_PIN,  LEFT_POT_INC,  LEFT_POT_UD,  LEFT_POT_CS,  0,
+                            0, 0, 0, STATE_IDLE, 0, 0};
 
-static Channel right_ch = {RIGHT_DIR_PIN, RIGHT_CURRENT_PIN,
-                            RIGHT_POT_INC, RIGHT_POT_UD, RIGHT_POT_CS, 0,
-                            0, 0, 0, STATE_IDLE, 0, 0, 0};
+static Channel right_ch = {RIGHT_DIR_PIN, RIGHT_POT_INC, RIGHT_POT_UD, RIGHT_POT_CS, 0,
+                            0, 0, 0, STATE_IDLE, 0, 0};
 
 // ── Watchdog ──────────────────────────────────────────────────────────────────
 static uint32_t last_cmd_ms    = 0;
 static bool     watchdog_fired = false;
-static bool     overcurrent    = false;
+static bool     overcurrent    = false;  // unused — kept for FB packet status field
 static bool     estop          = false;
 
 // ── Serial input buffer ───────────────────────────────────────────────────────
@@ -252,18 +244,6 @@ void loop() {
         right_ch.target = 0.0f;
     }
 
-    // ── Current sensing ─────────────────────────────────────────────────────
-    left_ch.amps  = read_current(left_ch.cur_pin);
-    right_ch.amps = read_current(right_ch.cur_pin);
-
-    if (left_ch.amps > MAX_CURRENT_AMPS || right_ch.amps > MAX_CURRENT_AMPS) {
-        overcurrent = true;
-        left_ch.target  = 0.0f;
-        right_ch.target = 0.0f;
-    } else {
-        overcurrent = false;
-    }
-
     // ── Update each channel ─────────────────────────────────────────────────
     if (!estop) {
         update_channel(left_ch,  now);
@@ -285,11 +265,12 @@ void loop() {
     long rt = right_ch.encoder_ticks;
     interrupts();
 
+    // FB packet: ticks and status (amps reported as 0.0 — no sensors fitted)
     Serial.print("FB:");
-    Serial.print(lt);              Serial.print(' ');
-    Serial.print(rt);              Serial.print(' ');
-    Serial.print(left_ch.amps,  2); Serial.print(' ');
-    Serial.print(right_ch.amps, 2); Serial.print(' ');
+    Serial.print(lt);    Serial.print(' ');
+    Serial.print(rt);    Serial.print(' ');
+    Serial.print("0.00"); Serial.print(' ');
+    Serial.print("0.00"); Serial.print(' ');
     Serial.println(status);
 }
 
@@ -391,10 +372,4 @@ void set_motor_output(Channel& ch, float norm) {
     step_pot_to(ch, target_step);
 }
 
-// ── ACS758 current reading ────────────────────────────────────────────────────
-float read_current(uint8_t pin) {
-    int   raw     = analogRead(pin);
-    float voltage = (raw / 1023.0f) * ADC_VREF;
-    float amps    = fabsf((voltage - ACS758_VREF) / ACS758_SENSITIVITY);
-    return amps;
-}
+// Current sensing removed — e-rickshaw controllers handle their own protection.
